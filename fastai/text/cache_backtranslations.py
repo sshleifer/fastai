@@ -1,5 +1,3 @@
-
-
 import textblob
 import funcy
 import glob
@@ -46,7 +44,7 @@ def save_backtranslations(txt_files):
 
 def map_it():
     path = untar_data(URLs.IMDB)
-    txt_files = glob.glob(f'{path}/*/*/*.txt')
+    txt_files = glob.glob(f'{path}/train/*/*.txt')
     pool = Pool(8)
     chunks = funcy.chunks(1000, txt_files)
     pool.map(save_backtranslations, list(chunks))
