@@ -6,11 +6,12 @@ from spacy.symbols import ORTH
 
 __all__ = ['BaseTokenizer', 'SpacyTokenizer', 'Tokenizer', 'Vocab', 'fix_html', 'replace_all_caps', 'replace_rep', 'replace_wrep',
            'rm_useless_spaces', 'spec_add_spaces', 'BOS', 'FLD', 'UNK', 'PAD', 'TK_MAJ', 'TK_UP', 'TK_REP', 'TK_REP', 'TK_WREP',
-           'deal_caps']
+           'deal_caps', 'back_translate']
 
 BOS,FLD,UNK,PAD = 'xxbos','xxfld','xxunk','xxpad'
 TK_MAJ,TK_UP,TK_REP,TK_WREP = 'xxmaj','xxup','xxrep','xxwrep'
 defaults.text_spec_tok = [UNK,PAD,BOS,FLD,TK_MAJ,TK_UP,TK_REP,TK_WREP]
+
 
 
 class BaseTokenizer():
@@ -159,3 +160,14 @@ class Vocab():
         "Load the `Vocab` contained in `path`"
         itos = pickle.load(open(path, 'rb'))
         return cls(itos)
+
+
+
+import textblob
+import funcy
+@funcy.memoize
+def back_translate(x, src_lang='en', dest_lang='es'):
+    """Translate x to dest_lang and then to src_lang."""
+    es =  textblob.TextBlob(x).translate(to=dest_lang)
+    en =  textblob.TextBlob(str(es)).translate(to=src_lang)
+    return en

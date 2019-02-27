@@ -1,6 +1,20 @@
 import pytest
 from fastai.text import *
 
+
+
+def test_transform():
+    transforms = [[back_translate], []]
+    path = untar_data(URLs.IMDB_SAMPLE)
+    df = text_df([0., 1.])
+    data = (TextList.from_df(df, path, cols='text')
+            .random_split_by_pct(0.2)
+            .label_from_df(cols='label', label_cls=FloatList)
+            .transform(transforms)
+            .databunch(bs=4))
+    import ipdb; ipdb.set_trace()
+
+
 def text_df(labels):
     data = []
     texts = ["fast ai is a cool project", "hello world"] * 20
@@ -168,3 +182,6 @@ def test_regression():
              .databunch(bs=4))
     assert data.c == 1
     x,y = data.one_batch()
+
+
+#from fastai.text.transform import back_translate

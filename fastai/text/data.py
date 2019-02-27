@@ -272,6 +272,13 @@ class Text(ItemBase):
     "Basic item for <code>text</code> data in numericalized `ids`."
     def __init__(self, ids, text): self.data,self.text = np.array(ids, dtype=np.int64),text
     def __str__(self):  return str(self.text)
+    def apply_tfms(self, tfms:TfmList, **kwargs):
+        # TODO: This is what is called behind the scenes when you use .transform in the data block API.
+        x = self.text
+        for tfm in tfms:
+            x = tfm(x)
+        self.text = x
+        return self
 
 class TokenizeProcessor(PreProcessor):
     "`PreProcessor` that tokenizes the texts in `ds`."
@@ -305,6 +312,7 @@ class OpenFileProcessor(PreProcessor):
     def process_one(self,item):
         return open_text(item) if isinstance(item, Path) else item
 
+
 class TextList(ItemList):
     "Basic `ItemList` for text data."
     _bunch = TextClasDataBunch
@@ -322,8 +330,9 @@ class TextList(ItemList):
 
 
     def apply_tfms(self):
+
         # TODO: This is what is called behind the scenes when you use .transform in the data block API.
-        pass
+        raise NotImplementedError('Called through TextList.apply_tfms')
 
     def label_for_lm(self, **kwargs):
         "A special labelling method for language models."
