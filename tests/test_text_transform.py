@@ -28,3 +28,12 @@ def test_tokenize_ignores_extraneous_space():
     tokenizer = Tokenizer(BaseTokenizer)
     toks = tokenizer.process_all(texts)
     assert toks[0] == ['test']
+
+
+
+
+
+def test_apply_tfms():
+
+    pass
+

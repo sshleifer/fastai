@@ -320,6 +320,11 @@ class TextList(ItemList):
         o = super().get(i)
         return Text(o, self.vocab.textify(o))
 
+
+    def apply_tfms(self):
+        # TODO: This is what is called behind the scenes when you use .transform in the data block API.
+        pass
+
     def label_for_lm(self, **kwargs):
         "A special labelling method for language models."
         self.__class__ = LMTextList
