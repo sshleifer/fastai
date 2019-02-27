@@ -33,7 +33,7 @@ def back_translate(x):
 
 def save_backtranslations(txt_files):
     """Write back translations to disk."""
-    for i, pth in enumerate(tqdm_notebook(txt_files)):
+    for i, pth in enumerate(txt_files):
         save_path = pth.replace('imdb', 'imdb_es')
         if Path(save_path).exists():
             continue
