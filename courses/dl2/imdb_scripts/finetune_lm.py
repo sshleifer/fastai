@@ -137,11 +137,14 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
             print('Using early stopping...')
         learner.fit(lrs, n_cycles, wds=wd, use_clr=(32,10) if use_clr else None, cycle_len=cl,
                     callbacks=callbacks)
-        learner.save(lm_path)
-        learner.save_encoder(enc_path)
     else:
         print('No more fine-tuning used. Saving original LM...')
-        learner.save(lm_path)
-        learner.save_encoder(enc_path)
+
+    learner.save(lm_path)
+    learner.save_encoder(enc_path)
+    try:
+        print(learner.sched.val_losses)
+    except AttributeError:
+        pass
 
 if __name__ == '__main__': fire.Fire(train_lm)
