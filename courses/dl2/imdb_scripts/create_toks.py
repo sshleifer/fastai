@@ -1,4 +1,4 @@
-#from fastai.text import *
+from fastai.text import *
 import html
 import fire
 import numpy as np
@@ -68,7 +68,7 @@ def get_all(df, n_lbls, lang='en'):
     return tok, labels
 
 
-def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en'):
+def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en', backwards=False):
     print(f'dir_path {dir_path} chunksize {chunksize} n_lbls {n_lbls} lang {lang}')
     try:
         spacy.load(lang)
@@ -89,7 +89,10 @@ def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en'):
     tok_val, val_labels = get_all(df_val, n_lbls, lang=lang)
 
     np.save(tmp_path / 'tok_trn.npy', tok_trn)
+    np.save(tmp_path / 'tok_trn_bwd.npy', np.array([list(reversed(x)) for x in tok_trn]))
+
     np.save(tmp_path / 'tok_val.npy', tok_val)
+    np.save(tmp_path / 'tok_val.npy', np.array([list(reversed(x)) for x in tok_val]))
     np.save(tmp_path / 'lbl_trn.npy', trn_labels)
     np.save(tmp_path / 'lbl_val.npy', val_labels)
 
