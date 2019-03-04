@@ -10,6 +10,42 @@ FLD = 'xfld'  # data field tag
 
 re1 = re.compile(r'  +')
 
+
+def make_dir_structure_under(path) -> None:
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
+
+def copy_subset_of_files(src_path: Path, dest_path, n=500):
+    """More making small IMDB"""
+    if isinstance(src_path, str):
+        src_path = Path(src_path)
+    if isinstance(dest_path, str):
+        dest_path = Path(dest_path)
+    for sd in ['test', 'train']:
+        sdir = src_path / sd
+        paths = list(sdir.glob('*/*.txt'))
+        # TODO(SS): option to toss unsup
+        assert len(paths) > 0
+        small_paths = np.random.choice(paths, size=n, replace=False)
+        for sp in small_paths:
+            full_dest_path = dest_path / sp.relative_to(src_path)
+            make_dir_structure_under(full_dest_path)
+            shutil.copy(sp, full_dest_path)
+
+
+    sdir = src_path / 'unsup'
+    if not sdir.exists():
+        return
+    paths = list(sdir.glob('*.txt'))
+    small_paths = np.random.choice(paths, size=n, replace=False)
+    for sp in small_paths:
+        dest_path = dest_path / sp.relative_to(src_path)
+        make_dir_structure_under(dest_path)
+        shutil.copy(sp, dest_path)
+
+
+
 CLASSES = ['neg', 'pos', 'unsup']
 def read_texts(path, classes=CLASSES):
     texts,labels = [],[]
@@ -25,12 +61,12 @@ def shuffle(lst1, lst2):
     trn_idx = np.random.permutation(len(lst1))
     return lst1[trn_idx], lst2[trn_idx]
 
-def make_train_csv(imdb_dir, dest_path):
+def make_csv_from_dir(imdb_dir, dest_path):
     """
     Args:
         imdb_dir like imdb/train"""
     trn_texts, trn_labels = read_texts(imdb_dir)
-    df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_texts},
+    df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_labels},
                  columns=['labels','text']).sample(frac=1.)
     df_trn[df_trn['labels'] != 2].to_csv(dest_path, header=False, index=False)
     print(f'saved {df_trn.shape[0]} rows to {dest_path}')
@@ -89,10 +125,7 @@ def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en', backwards=False)
     tok_val, val_labels = get_all(df_val, n_lbls, lang=lang)
 
     np.save(tmp_path / 'tok_trn.npy', tok_trn)
-    np.save(tmp_path / 'tok_trn_bwd.npy', np.array([list(reversed(x)) for x in tok_trn]))
-
     np.save(tmp_path / 'tok_val.npy', tok_val)
-    np.save(tmp_path / 'tok_val.npy', np.array([list(reversed(x)) for x in tok_val]))
     np.save(tmp_path / 'lbl_trn.npy', trn_labels)
     np.save(tmp_path / 'lbl_val.npy', val_labels)
 

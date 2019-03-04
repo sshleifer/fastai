@@ -31,11 +31,11 @@ class EarlyStopping(Callback):
         self.learner.load(self.save_path)
 
 
-def train_lm(dir_path, pretrain_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id='', bs=64,
+def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id='', bs=64,
              dropmult=1.0, backwards=False, lr=4e-3, preload=True, bpe=False, startat=0,
              use_clr=True, use_regular_schedule=False, use_discriminative=True, notrain=False, joined=False,
-             train_file_id='', early_stopping=False):
-    print(f'dir_path {dir_path}; pretrain_path {pretrain_path}; cuda_id {cuda_id}; '
+             train_file_id='', early_stopping=True):
+    print(f'dir_path {dir_path}; pre_lm_path {pre_lm_path}; cuda_id {cuda_id}; '
           f'pretrain_id {pretrain_id}; cl {cl}; bs {bs}; backwards {backwards} '
           f'dropmult {dropmult}; lr {lr}; preload {preload}; bpe {bpe};'
           f'startat {startat}; use_clr {use_clr}; notrain {notrain}; joined {joined} '
@@ -56,16 +56,14 @@ def train_lm(dir_path, pretrain_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_
     enc_path=f'{PRE}{lm_id}lm_enc'
 
     dir_path = Path(dir_path)
-    pretrain_path = Path(pretrain_path)
-    pre_lm_path = pretrain_path / 'models' / f'{PRE}{pretrain_id}.h5'
     for p in [dir_path, pretrain_path, pre_lm_path]:
         assert p.exists(), f'Error: {p} does not exist.'
-
+    itos_path = dir_path / 'tmp' / 'itos.pkl'
     bptt=70
     em_sz,nh,nl = 400,1150,3
     opt_fn = partial(optim.Adam, betas=(0.8, 0.99))
 
-    if backwards:
+    if backwards:  # im not sure these need to be different.
         trn_lm_path = dir_path / 'tmp' / f'trn_{joined_id}{IDS}{train_file_id}_bwd.npy'
         val_lm_path = dir_path / 'tmp' / f'val_{joined_id}{IDS}_bwd.npy'
     else:
@@ -84,8 +82,8 @@ def train_lm(dir_path, pretrain_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_
         itos = pickle.load(open(dir_path / 'tmp' / 'itos.pkl', 'rb'))
         vs = len(itos)
 
-    trn_dl = LanguageModelLoader(trn_lm, bs, bptt)
-    val_dl = LanguageModelLoader(val_lm, bs, bptt)
+    trn_dl = LanguageModelLoader(trn_lm, bs, bptt, backwards=backwards)
+    val_dl = LanguageModelLoader(val_lm, bs, bptt, backwards=backwards)
     md = LanguageModelData(dir_path, 1, vs, trn_dl, val_dl, bs=bs, bptt=bptt)
 
     drops = np.array([0.25, 0.1, 0.2, 0.02, 0.15])*dropmult
@@ -107,7 +105,7 @@ def train_lm(dir_path, pretrain_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_
             ew = to_np(wgts['0.encoder.weight'])
             row_m = ew.mean(0)
 
-            itos2 = pickle.load(open(pretrain_path / 'tmp' / f'itos.pkl', 'rb'))
+            itos2 = pickle.load(open(itos_path, 'rb'))
             stoi2 = collections.defaultdict(lambda:-1, {v:k for k,v in enumerate(itos2)})
             nw = np.zeros((vs, em_sz), dtype=np.float32)
             nb = np.zeros((vs,), dtype=np.float32)
