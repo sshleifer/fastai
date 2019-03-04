@@ -63,12 +63,8 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
     em_sz,nh,nl = 400,1150,3
     opt_fn = partial(optim.Adam, betas=(0.8, 0.99))
 
-    if backwards:  # im not sure these need to be different.
-        trn_lm_path = dir_path / 'tmp' / f'trn_{joined_id}{IDS}{train_file_id}_bwd.npy'
-        val_lm_path = dir_path / 'tmp' / f'val_{joined_id}{IDS}_bwd.npy'
-    else:
-        trn_lm_path = dir_path / 'tmp' / f'trn_{joined_id}{IDS}{train_file_id}.npy'
-        val_lm_path = dir_path / 'tmp' / f'val_{joined_id}{IDS}.npy'
+    trn_lm_path = dir_path / 'tmp' / f'trn_{joined_id}{IDS}{train_file_id}.npy'
+    val_lm_path = dir_path / 'tmp' / f'val_{joined_id}{IDS}.npy'
 
     print(f'Loading {trn_lm_path} and {val_lm_path}')
     trn_lm = np.load(trn_lm_path)
