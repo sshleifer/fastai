@@ -218,6 +218,7 @@ class Learner():
             moms = use_clr[2:] if len(use_clr) > 2 else None
             cycle_end = self.get_cycle_end(cycle_save_name)
             assert cycle_len, "use_clr requires cycle_len arg"
+            assert len(data.trn_dl) > 0
             self.sched = CircularLR(layer_opt, len(data.trn_dl)*cycle_len, on_cycle_end=cycle_end, div=clr_div, cut_div=cut_div,
                                     momentums=moms)
         elif use_clr_beta is not None:

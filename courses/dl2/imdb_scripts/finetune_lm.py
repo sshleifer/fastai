@@ -31,11 +31,12 @@ class EarlyStopping(Callback):
         self.learner.load(self.save_path)
 
 
-def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id='', bs=64,
+def train_lm(dir_path, wt103_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id='', bs=64,
              dropmult=1.0, backwards=False, lr=4e-3, preload=True, bpe=False, startat=0,
-             use_clr=True, use_regular_schedule=False, use_discriminative=True, notrain=False, joined=False,
-             train_file_id='', early_stopping=True):
-    print(f'dir_path {dir_path}; pre_lm_path {pre_lm_path}; cuda_id {cuda_id}; '
+             use_clr=True, use_regular_schedule=False, use_discriminative=True,
+             notrain=False, joined=False,
+             train_file_id='', early_stopping=True, ):
+    print(f'dir_path {dir_path}; wt103_path {wt103_path}; cuda_id {cuda_id}; '
           f'pretrain_id {pretrain_id}; cl {cl}; bs {bs}; backwards {backwards} '
           f'dropmult {dropmult}; lr {lr}; preload {preload}; bpe {bpe};'
           f'startat {startat}; use_clr {use_clr}; notrain {notrain}; joined {joined} '
@@ -52,13 +53,15 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
     train_file_id = train_file_id if train_file_id == '' else f'_{train_file_id}'
     joined_id = 'lm_' if joined else ''
     lm_id = lm_id if lm_id == '' else f'{lm_id}_'
+    # these are destination paths
     lm_path=f'{PRE}{lm_id}lm'
     enc_path=f'{PRE}{lm_id}lm_enc'
 
     dir_path = Path(dir_path)
-    for p in [dir_path, pretrain_path, pre_lm_path]:
+    for p in [dir_path, wt103_path]:
         assert p.exists(), f'Error: {p} does not exist.'
-    itos_path = dir_path / 'tmp' / 'itos.pkl'
+    wiki_itos_path = wt103_path / 'itos_wt103.pkl'
+    wiki_model_path = wt103_path / f'{PRE}{pretrain_id}.h5'
     bptt=70
     em_sz,nh,nl = 400,1150,3
     opt_fn = partial(optim.Adam, betas=(0.8, 0.99))
@@ -69,8 +72,10 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
     print(f'Loading {trn_lm_path} and {val_lm_path}')
     trn_lm = np.load(trn_lm_path)
     trn_lm = np.concatenate(trn_lm)
+    assert len(trn_lm) > 0
     val_lm = np.load(val_lm_path)
     val_lm = np.concatenate(val_lm)
+    assert len(val_lm) > 0
 
     if bpe:
         vs=30002
@@ -80,7 +85,9 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
 
     trn_dl = LanguageModelLoader(trn_lm, bs, bptt, backwards=backwards)
     val_dl = LanguageModelLoader(val_lm, bs, bptt, backwards=backwards)
+    assert len(trn_dl) > 0, 'see math in LanguageModelLoader.__len__'
     md = LanguageModelData(dir_path, 1, vs, trn_dl, val_dl, bs=bs, bptt=bptt)
+
 
     drops = np.array([0.25, 0.1, 0.2, 0.02, 0.15])*dropmult
 
@@ -93,7 +100,7 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
 
     lrs = np.array([lr/6,lr/3,lr,lr/2]) if use_discriminative else lr
     if preload and startat == 0:
-        wgts = torch.load(pre_lm_path, map_location=lambda storage, loc: storage)
+        wgts = torch.load(wiki_model_path, map_location=lambda storage, loc: storage)
         if bpe:
             learner.model.load_state_dict(wgts)
         else:
@@ -101,12 +108,12 @@ def train_lm(dir_path, pre_lm_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id
             ew = to_np(wgts['0.encoder.weight'])
             row_m = ew.mean(0)
 
-            itos2 = pickle.load(open(itos_path, 'rb'))
-            stoi2 = collections.defaultdict(lambda:-1, {v:k for k,v in enumerate(itos2)})
+            wiki_itos = pickle.load(open(wiki_itos_path, 'rb'))
+            wiki_stoi = collections.defaultdict(lambda:-1, {v:k for k,v in enumerate(wiki_itos)})
             nw = np.zeros((vs, em_sz), dtype=np.float32)
             nb = np.zeros((vs,), dtype=np.float32)
             for i,w in enumerate(itos):
-                r = stoi2[w]
+                r = wiki_stoi[w]
                 if r>=0:
                     nw[i] = ew[r]
                 else:

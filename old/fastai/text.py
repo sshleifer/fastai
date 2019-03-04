@@ -155,6 +155,7 @@ class LanguageModelLoader():
     def __init__(self, nums, bs, bptt, backwards=False):
         self.bs,self.bptt,self.backwards = bs,bptt,backwards
         self.data = self.batchify(nums)
+        print(f'data.shape" {self.data.shape}')
         self.i,self.iter = 0,0
         self.n = len(self.data)
 
@@ -196,6 +197,7 @@ class LanguageModelData():
     def __init__(self, path, pad_idx, n_tok, trn_dl, val_dl, test_dl=None, **kwargs):
         self.path,self.pad_idx,self.n_tok = path,pad_idx,n_tok
         self.trn_dl,self.val_dl,self.test_dl = trn_dl,val_dl,test_dl
+        assert len(self.trn_dl) > 0
 
     def get_model(self, opt_fn, emb_sz, n_hid, n_layers, **kwargs):
         m = get_language_model(self.n_tok, emb_sz, n_hid, n_layers, self.pad_idx, **kwargs)

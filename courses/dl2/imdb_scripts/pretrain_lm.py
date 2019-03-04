@@ -1,7 +1,7 @@
 import fire
 from fastai.text import *
 
-from sampled_sm import *
+from .sampled_sm import *
 
 
 def train_lm(dir_path, cuda_id, cl=1, bs=64, backwards=False, lr=3e-4, sampled=True,
