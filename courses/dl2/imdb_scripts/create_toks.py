@@ -1,11 +1,39 @@
-from fastai.text import *
+#from fastai.text import *
 import html
 import fire
+import numpy as np
+import re
+import pandas as pd
 
 BOS = 'xbos'  # beginning-of-sentence tag
 FLD = 'xfld'  # data field tag
 
 re1 = re.compile(r'  +')
+
+CLASSES = ['neg', 'pos', 'unsup']
+def read_texts(path, classes=CLASSES):
+    texts,labels = [],[]
+    for idx,label in enumerate(classes):
+        for fname in (path/label).glob('*.*'):
+            texts.append(fname.open('r', encoding='utf-8').read())
+            labels.append(idx)
+    return np.array(texts),np.array(labels)
+
+
+np.random.seed(42)
+def shuffle(lst1, lst2):
+    trn_idx = np.random.permutation(len(lst1))
+    return lst1[trn_idx], lst2[trn_idx]
+
+def make_train_csv(imdb_dir, dest_path):
+    """
+    Args:
+        imdb_dir like imdb/train"""
+    trn_texts, trn_labels = read_texts(imdb_dir)
+    df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_texts},
+                 columns=['labels','text']).sample(frac=1.)
+    df_trn[df_trn['labels'] != 2].to_csv(dest_path, header=False, index=False)
+    print(f'saved {df_trn.shape[0]} rows to {dest_path}')
 
 
 def fixup(x):
