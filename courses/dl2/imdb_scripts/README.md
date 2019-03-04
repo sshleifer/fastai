@@ -91,11 +91,19 @@ Then run `finetune_lm.py` to fine-tune a language model pretrained on WikiText-1
 
 Example command: `python finetune_lm.py data/imdb data/wt103 1 25 --lm-id pretrain_wt103`
 
+
+```
+python imdb_scripts/finetune_lm.py 
+    --dir-path ~/text-augmentation/imdb  --pretrain-path  models/wt103 
+    --lr 5e-3 --backwards True 
+    --early-stopping True
+```
+
 Usage:
 ```
 finetune_lm.py DIR_PATH PRETRAIN_PATH [CUDA_ID] [CL] [PRETRAIN_ID] [LM_ID] [BS] [DROPMULT] [BACKWARDS] [LR] [PRELOAD] [BPE] [STARTAT] [USE_CLR] [USE_REGULAR_SCHEDULE] [USE_DISCRIMINATIVE] [NOTRAIN] [JOINED] [TRAIN_FILE_ID] [EARLY_STOPPING]
 finetune_lm.py --dir-path DIR_PATH --pretrain-path PRETRAIN_PATH [--cuda-id CUDA_ID] [--cl CL] [--pretrain-id PRETRAIN_ID] [--lm-id LM_ID] [--bs BS] [--dropmult DROPMULT] [--backwards BACKWARDS] [--lr LR] [--preload PRELOAD] [--bpe BPE] [--startat STARTAT] [--use-clr USE_CLR] [--use-regular-schedule USE_REGULAR_SCHEDULE] [--use-discriminative USE_DISCRIMINATIVE] [--notrain NOTRAIN] [--joined JOINED] [--train-file-id TRAIN_FILE_ID] [--early-stopping EARLY_STOPPING]
-```
+```  
 - `DIR_PATH`: the directory where the `tmp` and `models` folder are located
 - `PRETRAIN_PATH`: the path where the pretrained model is saved; if using the downloaded model, this is `wt103`
 - `CUDA_ID`: the id of the GPU used for training the model

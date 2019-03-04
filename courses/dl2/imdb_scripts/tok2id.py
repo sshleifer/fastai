@@ -31,10 +31,18 @@ def tok2id(dir_path, max_vocab=30000, min_freq=1, itos_path=None):
 
 
     trn_lm = np.array([[stoi[o] for o in p] for p in trn_tok])
+    trn_lm_rev = np.array([[stoi[o] for o in reversed(p)] for p in trn_tok])
     val_lm = np.array([[stoi[o] for o in p] for p in val_tok])
+    val_lm_rev = np.array([[stoi[o] for o in reversed(p)] for p in val_tok])
 
     np.save(tmp_path / 'trn_ids.npy', trn_lm)
+    np.save(tmp_path / 'trn_ids_bwd.npy', trn_lm_rev)
     np.save(tmp_path / 'val_ids.npy', val_lm)
+    np.save(tmp_path / 'val_ids_bwd.npy', val_lm_rev)
+
+
+
+
     pickle.dump(itos, open(tmp_path / 'itos.pkl', 'wb'))
 
 if __name__ == '__main__': fire.Fire(tok2id)
