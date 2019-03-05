@@ -175,9 +175,10 @@ def fit(model, data, n_epochs, opt, crit, metrics=None, callbacks=None, stepper=
                 print_stats(epoch, [debias_loss] + vals, visualize, prev_val)
             else:
                 print(layout.format(*names))
-                print_stats(epoch, [debias_loss] + vals, visualize)
-            prev_val = [debias_loss] + vals
-            ep_vals = append_stats(ep_vals, epoch, [debias_loss] + vals)
+                stats = [x for x in [debias_loss] + vals if isinstance(x, float) else x[0]]
+                print_stats(epoch, stats, visualize)
+            prev_val = stats
+            ep_vals = append_stats(ep_vals, epoch, stats)
         if stop: break
     for cb in callbacks: cb.on_train_end()
     if get_ep_vals: return vals, ep_vals
@@ -267,7 +268,9 @@ def predict_with_targs_(m, dl):
     m.eval()
     if hasattr(m, 'reset'): m.reset()
     res = []
-    for *x,y in iter(dl): res.append([get_prediction(to_np(m(*VV(x)))),to_np(y)])
+    print('iterating')
+    for *x,y in iter(dl):
+        res.append([get_prediction(to_np(m(*VV(x)))),to_np(y.long())])
     return zip(*res)
 
 def predict_with_targs(m, dl):
