@@ -175,7 +175,7 @@ def fit(model, data, n_epochs, opt, crit, metrics=None, callbacks=None, stepper=
                 print_stats(epoch, [debias_loss] + vals, visualize, prev_val)
             else:
                 print(layout.format(*names))
-                stats = [x for x in [debias_loss] + vals if isinstance(x, float) else x[0]]
+                stats = [x if isinstance(x, float) else x[0] for x in [debias_loss] + vals]
                 print_stats(epoch, stats, visualize)
             prev_val = stats
             ep_vals = append_stats(ep_vals, epoch, stats)

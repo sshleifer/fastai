@@ -40,7 +40,9 @@ def eval_clas(model_dir_path, val_dir=None, cuda_id=0, lm_id='', clas_id=None, b
     val_ds = TextDataset(val_sent, val_lbls)
     val_samp = SortSampler(val_sent, key=lambda x: len(val_sent[x]))
     val_lbls_sampled = val_lbls[list(val_samp)]
+
     val_dl = DataLoader(val_ds, bs, transpose=True, num_workers=1, pad_idx=1, sampler=val_samp)
+    # maybe if we change this first arg to val_dir we will have fewer issues.
     md = ModelData(model_dir_path, None, val_dl)
 
     if bpe: vs=30002
