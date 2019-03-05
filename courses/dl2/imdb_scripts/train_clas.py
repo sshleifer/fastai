@@ -146,6 +146,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     print('Plotting lrs...')
     learn.sched.plot_lr()
     learn.save(final_clas_file)
+    return learn
 
 if __name__ == '__main__': fire.Fire(train_clas)
 
