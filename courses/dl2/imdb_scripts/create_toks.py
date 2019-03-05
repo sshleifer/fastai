@@ -16,13 +16,14 @@ def make_dir_structure_under(path) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
 
 
-def copy_subset_of_files(src_path: Path, dest_path, n=500):
+def copy_subset_of_files(src_path: Path, dest_path, n=500,
+                         dirs=('test', 'train')):
     """More making small IMDB"""
     if isinstance(src_path, str):
         src_path = Path(src_path)
     if isinstance(dest_path, str):
         dest_path = Path(dest_path)
-    for sd in ['test', 'train']:
+    for sd in dirs:
         sdir = src_path / sd
         paths = list(sdir.glob('*/*.txt'))
         if sd == 'train':

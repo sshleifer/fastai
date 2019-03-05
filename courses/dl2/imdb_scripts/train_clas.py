@@ -10,7 +10,7 @@ def freeze_all_but(learner, n):
 
 
 def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards=False, startat=0, unfreeze=True,
-               lr=0.003, dropmult=1.0, bpe=False, use_clr=True,
+               lr=0.01, dropmult=1.0, bpe=False, use_clr=True,
                use_regular_schedule=False, use_discriminative=True, last=False, chain_thaw=False,
                from_scratch=False, train_file_id=''):
     print(f'dir_path {dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; clas_id {clas_id}; bs {bs}; cl {cl}; backwards {backwards}; '
