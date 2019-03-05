@@ -170,12 +170,11 @@ def fit(model, data, n_epochs, opt, crit, metrics=None, callbacks=None, stepper=
                     fix_batchnorm(swa_model, cur_data.trn_dl)
                     swa_vals = validate(swa_stepper, cur_data.val_dl, metrics, epoch, validate_skip = validate_skip)
                     vals += swa_vals
-
+            stats = [x if isinstance(x, float) else x[0] for x in [debias_loss] + vals]
             if epoch > 0:
-                print_stats(epoch, [debias_loss] + vals, visualize, prev_val)
+                print_stats(epoch, stats, visualize, prev_val)
             else:
                 print(layout.format(*names))
-                stats = [x if isinstance(x, float) else x[0] for x in [debias_loss] + vals]
                 print_stats(epoch, stats, visualize)
             prev_val = stats
             ep_vals = append_stats(ep_vals, epoch, stats)
@@ -186,7 +185,7 @@ def fit(model, data, n_epochs, opt, crit, metrics=None, callbacks=None, stepper=
 
 def append_stats(ep_vals, epoch, values, decimals=6):
     try:
-        ep_vals[epoch]=list(np.round(values, decimals))
+        ep_vals[epoch]= list(np.round(values, decimals))
     except AttributeError:
         ep_vals[epoch] = values
     return ep_vals

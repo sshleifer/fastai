@@ -34,7 +34,7 @@ class EarlyStopping(Callback):
 def train_lm(dir_path, wt103_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id='', bs=64,
              dropmult=1.0, backwards=False, lr=4e-3, preload=True, bpe=False, startat=0,
              use_clr=True, use_regular_schedule=False, use_discriminative=True,
-             notrain=False, joined=False,
+             notrain=False, joined=False, train_last_layer_first=True,
              train_file_id='', early_stopping=True, ):
     print(f'dir_path {dir_path}; wt103_path {wt103_path}; cuda_id {cuda_id}; '
           f'pretrain_id {pretrain_id}; cl {cl}; bs {bs}; backwards {backwards} '
@@ -123,8 +123,9 @@ def train_lm(dir_path, wt103_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id=
             wgts['0.encoder_with_dropout.embed.weight'] = T(np.copy(nw))
             wgts['1.decoder.weight'] = T(np.copy(nw))
             learner.model.load_state_dict(wgts)
-            #learner.freeze_to(-1)
-            #learner.fit(lrs, 1, wds=wd, use_clr=(6,4), cycle_len=1)
+            if train_last_layer_first:
+                learner.freeze_to(-1)
+                learner.fit(lrs, 1, wds=wd, use_clr=(6,4), cycle_len=1)
     elif preload:
         print('Loading LM that was already fine-tuned on the target data...')
         learner.load(lm_path)
