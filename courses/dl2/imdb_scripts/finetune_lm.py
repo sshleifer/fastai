@@ -149,7 +149,7 @@ def train_lm(dir_path, wt103_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id=
 
     learner.save(lm_path)
     learner.save_encoder(enc_path)
-    print(f'saving to {lm_path} and {enc_path}')
+    print(f'saving to {learner.get_model_path(lm_path)} and {learner.get_model_path(enc_path)}')
     try:
         print(learner.sched.val_losses)
     except AttributeError:
