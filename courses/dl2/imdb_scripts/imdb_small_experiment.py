@@ -13,12 +13,13 @@ from sklearn.utils import shuffle
 target_language = 'es'
 WT103_PATH = Path('/home/paperspace/fastai-fork/courses/dl2/wt103/')
 assert WT103_PATH.exists()
-orig_small_data_dir = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
+ORIG_SMALL_DATA_DIR = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
 
 
 #big_data_dir = Path('/home/paperspace/text-augmentation/imdb')
 
-def run_experiment(target_language, n_to_copy=None, second_lang=False):
+def run_experiment(target_language, n_to_copy=None, second_lang=False,
+        orig_small_data_dir=ORIG_SMALL_DATA_DIR):
     small_data_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if small_data_dir.exists() and not second_lang:
         shutil.rmtree(small_data_dir)
