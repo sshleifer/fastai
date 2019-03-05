@@ -25,7 +25,8 @@ def copy_subset_of_files(src_path: Path, dest_path, n=500):
     for sd in ['test', 'train']:
         sdir = src_path / sd
         paths = list(sdir.glob('*/*.txt'))
-        # TODO(SS): option to toss unsup
+        if sd == 'train':
+            paths = [x for x in paths if 'unsup' not in x]
         assert len(paths) > 0
         small_paths = np.random.choice(paths, size=n, replace=False)
         for sp in small_paths:
