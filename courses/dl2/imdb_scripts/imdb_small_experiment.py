@@ -8,7 +8,7 @@ from imdb_scripts.train_clas import train_clas
 from imdb_scripts.eval_clas import eval_clas
 from imdb_scripts.tok2id import tok2id
 from imdb_scripts.finetune_lm import train_lm
-
+from sklearn.utils import shuffle
 
 target_language = 'es'
 WT103_PATH = Path('/home/paperspace/fastai-fork/courses/dl2/wt103/')
@@ -33,9 +33,11 @@ def run_experiment(target_language):
     # eval_clas(small_data_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
 
 
-def add_aug_files(target_language, small_data_dir):
+def add_aug_files(target_language, small_data_dir, n_to_copy=None):
     aug_dir = Path(f'/home/paperspace/text-augmentation/imdb_{target_language}/')
-    selected_train = list((small_data_dir / 'train/').glob('*/*.txt'))
+    selected_train = shuffle(list((small_data_dir / 'train/').glob('*/*.txt')))
+    if n_to_copy is not None:
+        selected_train = selected_train[:n_to_copy]
     assert aug_dir.exists()
     for p in selected_train:
         ext = p.relative_to(small_data_dir)
