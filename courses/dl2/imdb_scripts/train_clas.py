@@ -143,8 +143,8 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     else:
         n_cycles = 1
     learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None)
-    print('Plotting lrs...')
-    learn.sched.plot_lr()
+    #print('Plotting lrs...')
+    #learn.sched.plot_lr()
     learn.save(final_clas_file)
     return learn
 
