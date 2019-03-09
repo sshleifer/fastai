@@ -54,7 +54,7 @@ class VATLoss(nn.Module):
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
 
         attack = _l2_normalize(attack)
-        attack.requires_grad_(True)
+
         start = attack[0][0]
         #print(f'attack[o]: {start}')
 
@@ -62,6 +62,7 @@ class VATLoss(nn.Module):
             with set_grad_enabled(model.training):
             # calc adversarial direction
                 for _ in range(self.ip):
+                    attack.requires_grad_(True)
                     #attac
 
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack * self.xi)
