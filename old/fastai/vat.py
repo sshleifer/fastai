@@ -72,7 +72,7 @@ class VATLoss(nn.Module):
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
             lds = F.kl_div(logp_hat, pred)
-        print('Is volatile', lds.is_volatile)
+        #print('Is volatile', lds.is_volatile)
         attack.detach()
         return lds
 
