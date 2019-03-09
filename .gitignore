@@ -1,4 +1,5 @@
 .bundle/
+*.imdb-prepro.ipynb
 *.bak
 *.log
 *~

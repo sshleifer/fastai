@@ -19,6 +19,7 @@ def _disable_tracking_bn_stats(model):
 
 def _l2_normalize(d):
     d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
+
     d /= torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8
     return d
 
