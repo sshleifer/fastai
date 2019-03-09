@@ -55,7 +55,7 @@ class Stepper():
         else: self.opt.zero_grad()
         loss = raw_loss = self.crit(output, y)
         if self.do_vat:
-            loss += VATLoss().forward(self.m, xs)
+            loss += VATLoss().forward(self.m, *xs)
         if self.loss_scale != 1: assert(self.fp16); loss = loss*self.loss_scale
         if self.reg_fn: loss = self.reg_fn(output, xtra, raw_loss)
         loss.backward()

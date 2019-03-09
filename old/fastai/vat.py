@@ -2,7 +2,8 @@ import contextlib
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .core import no_grad_context
+from .core import no_grad_context, set_grad_enabled
+from .text import *
 
 
 @contextlib.contextmanager
@@ -37,23 +38,24 @@ class VATLoss(nn.Module):
     def forward(self, model, x):
 
         #with torch.no_grad(): # what is predecessor?
+        l_x, raw_outputs, outputs = model(x)
         with no_grad_context():
-            pred = F.softmax(model(x), dim=1)
+            pred = F.softmax(l_x, dim=1)
 
         # prepare random unit tensor
-        d = torch.rand(x.shape).sub(0.5).to(x.device)
+        d = to_gpu(torch.rand(x.shape).sub(0.5))
         d = _l2_normalize(d)
 
         with _disable_tracking_bn_stats(model):
+            with set_grad_enabled():
             # calc adversarial direction
-            for _ in range(self.ip):
-                d.requires_grad_()
-                pred_hat = model(x + self.xi * d)
-                logp_hat = F.log_softmax(pred_hat, dim=1)
-                adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
-                adv_distance.backward()
-                d = _l2_normalize(d.grad)
-                model.zero_grad()
+                for _ in range(self.ip):
+                    pred_hat, raw_out, out = model(x + self.xi * d)
+                    logp_hat = F.log_softmax(pred_hat, dim=1)
+                    adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
+                    adv_distance.backward()
+                    d = _l2_normalize(d.grad)
+                    model.zero_grad()
 
             # calc LDS
             r_adv = d * self.eps
