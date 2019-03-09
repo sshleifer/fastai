@@ -22,7 +22,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
         cuda_id = -1
     torch.cuda.set_device(cuda_id)
 
-    PRE = 'bwd_' if backwards else 'fwd_'
+    PRE = 'bwd_' if backwards else ''
     PRE = 'bpe_' + PRE if bpe else PRE
     IDS = 'bpe' if bpe else 'ids'
     train_file_id = train_file_id if train_file_id == '' else f'_{train_file_id}'
@@ -79,7 +79,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
               layers=[em_sz*3, 50, c], drops=[dps[4], 0.1],
               dropouti=dps[0], wdrop=dps[1], dropoute=dps[2], dropouth=dps[3])
 
-    learn = RNN_Learner(md, TextModel(to_gpu(m)), opt_fn=opt_fn, do_vat=True)
+    learn = RNN_Learner(md, TextModel(to_gpu(m)), opt_fn=opt_fn)
     learn.reg_fn = partial(seq2seq_reg, alpha=2, beta=1)
     learn.clip = 25
     learn.metrics = [accuracy]
@@ -142,7 +142,8 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
         cl = None
     else:
         n_cycles = 1
-    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None)
+    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None,
+            do_vat=True)
     print('Plotting lrs...')
     learn.sched.plot_lr()
     learn.save(final_clas_file)
