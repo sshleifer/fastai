@@ -54,7 +54,7 @@ class VATLoss(nn.Module):
                 for _ in range(self.ip):
                     # problem here is that we are trying to perturb word ids...
 
-                    emb = model[0].encoder_with_dropout(x, dropout=model.dropoute if model.training else 0)
+                    emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
                     emb = model[0].dropouti(emb)
                     print(f'emb: {emb.shape}')
 
