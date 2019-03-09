@@ -50,34 +50,31 @@ class VATLoss(nn.Module):
         emb = model[0].dropouti(emb)
         print(f'emb: {emb.shape}')
 
-        d = V_(torch.rand(emb_shape).sub(0.5), requires_grad=True)
-        d = _l2_normalize(d)
+        attack = V_(torch.rand(emb_shape).sub(0.5), requires_grad=True)
+        attack = _l2_normalize(attack)
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
             # calc adversarial direction
                 for _ in range(self.ip):
-                    # problem here is that we are trying to perturb word ids...
+                    logp_hat = self.seq_rnn_emb2logits(model, emb, attack * self.xi)
 
-
-                    rnn_out = model[0].forward_from_embedding(emb + self.xi * d)
-                    pred_hat, _, __ = model[1].forward(rnn_out)
-
-                    #pred_hat, raw_out, out = model(x + self.xi * d)
-                    logp_hat = F.log_softmax(pred_hat, dim=1)
-                    #kl_div(input, target, size_average=True)
                     adv_distance = F.kl_div(logp_hat, pred, #detach(),
                                             # reduction='batchmean'
                                             )
-                    assert d.grad is not None, '1. dgrad None'
+                    assert attack.grad is not None, '1. dgrad None'
                     adv_distance.backward()
-                    assert d.grad is not None, '2. dgrad Nonep'
-                    d = _l2_normalize(d.grad)
+                    assert attack.grad is not None, '2. dgrad Nonep'
+                    attack = _l2_normalize(attack.grad)
                     model.zero_grad()
 
             # calc LDS
-            r_adv = d * self.eps
-            pred_hat = model(x + r_adv)
-            logp_hat = F.log_softmax(pred_hat, dim=1)
+            r_adv = attack * self.eps
+            logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
             lds = F.kl_div(logp_hat, pred, reduction='batchmean')
 
         return lds
+
+    def seq_rnn_emb2logits(self, model, emb, attack):
+        rnn_out = model[0].forward_from_embedding(emb + attack)
+        pred_hat, _, __ = model[1].forward(rnn_out)
+        return F.log_softmax(pred_hat, dim=1)
