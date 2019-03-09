@@ -12,7 +12,7 @@ def freeze_all_but(learner, n):
 def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards=False, startat=0, unfreeze=True,
                lr=0.01, dropmult=1.0, bpe=False, use_clr=True,
                use_regular_schedule=False, use_discriminative=True, last=False, chain_thaw=False,
-               from_scratch=False, train_file_id=''):
+               from_scratch=False, train_file_id='', do_vat=True):
     print(f'dir_path {dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; clas_id {clas_id}; bs {bs}; cl {cl}; backwards {backwards}; '
         f'dropmult {dropmult} unfreeze {unfreeze} startat {startat}; bpe {bpe}; use_clr {use_clr};'
         f'use_regular_schedule {use_regular_schedule}; use_discriminative {use_discriminative}; last {last};'
@@ -95,14 +95,14 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     else:
         print('Training classifier from scratch. LM encoder is not loaded.')
         use_regular_schedule = True
-
+    clr_cycle = None if use_regular_schedule or not use_clr else (8, 3)
+    cyc_len = None if use_regular_schedule else 1
     if (startat<1) and not last and not chain_thaw and not from_scratch:
         learn.freeze_to(-1)
-        learn.fit(lrs, 1, wds=wd, cycle_len=None if use_regular_schedule else 1,
-                  use_clr=None if use_regular_schedule or not use_clr else (8,3))
+        learn.fit(lrs, 1, wds=wd, cycle_len=cyc_len,
+                  use_clr=clr_cycle, do_vat=do_vat)
         learn.freeze_to(-2)
-        learn.fit(lrs, 1, wds=wd, cycle_len=None if use_regular_schedule else 1,
-                  use_clr=None if use_regular_schedule or not use_clr else (8, 3))
+        learn.fit(lrs, 1, wds=wd, cycle_len=cyc_len, use_clr=clr_cycle, do_vat=do_vat)
         learn.save(intermediate_clas_file)
     elif startat==1:
         learn.load(intermediate_clas_file)
@@ -115,15 +115,13 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
         # fine-tune last layer
         learn.freeze_to(-1)
         print('Fine-tuning last layer...')
-        learn.fit(lrs, 1, wds=wd, cycle_len=None if use_regular_schedule else 1,
-                  use_clr=None if use_regular_schedule or not use_clr else (8,3))
+        learn.fit(lrs, 1, wds=wd, cycle_len=cyc_len, use_clr=clr_cycle, do_vat=do_vat)
         n = 0
         # fine-tune all layers up to the second-last one
         while n < n_layers-1:
             print('Fine-tuning layer #%d.' % n)
             freeze_all_but(learn, n)
-            learn.fit(lrs, 1, wds=wd, cycle_len=None if use_regular_schedule else 1,
-                      use_clr=None if use_regular_schedule or not use_clr else (8,3))
+            learn.fit(lrs, 1, wds=wd, cycle_len=cyc_len, use_clr=clr_cycle, do_vat=do_vat)
             n += 1
 
     if unfreeze:
@@ -142,8 +140,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
         cl = None
     else:
         n_cycles = 1
-    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None,
-            do_vat=True)
+    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=True)
     print('Plotting lrs...')
     learn.sched.plot_lr()
     learn.save(final_clas_file)

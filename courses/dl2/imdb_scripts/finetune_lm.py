@@ -35,7 +35,7 @@ def train_lm(dir_path, wt103_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id=
              dropmult=1.0, backwards=False, lr=4e-3, preload=True, bpe=False, startat=0,
              use_clr=True, use_regular_schedule=False, use_discriminative=True,
              notrain=False, joined=False, train_last_layer_first=True,
-             train_file_id='', early_stopping=True, ):
+             train_file_id='', early_stopping=True):
     print(f'dir_path {dir_path}; wt103_path {wt103_path}; cuda_id {cuda_id}; '
           f'pretrain_id {pretrain_id}; cl {cl}; bs {bs}; backwards {backwards} '
           f'dropmult {dropmult}; lr {lr}; preload {preload}; bpe {bpe};'
