@@ -50,7 +50,7 @@ class VATLoss(nn.Module):
         emb = model[0].dropouti(emb)
         print(f'emb: {emb.shape}')
 
-        d = V_(torch.rand(emb_shape).sub(0.5), requires_grad=True, volatile=True)
+        d = V_(torch.rand(emb_shape).sub(0.5), requires_grad=True)
         d = _l2_normalize(d)
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
