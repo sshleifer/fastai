@@ -216,6 +216,7 @@ class RNN_Learner(Learner):
     def load_encoder(self, name): load_model(self.model[0], self.get_model_path(name))
 
 
+
 class TextModel(BasicModel):
     def get_layer_groups(self):
         m = self.model[0]

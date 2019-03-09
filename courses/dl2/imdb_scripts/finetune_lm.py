@@ -58,6 +58,7 @@ def train_lm(dir_path, wt103_path, cuda_id=0, cl=25, pretrain_id='wt103', lm_id=
     enc_path=f'{PRE}{lm_id}lm_enc'
 
     dir_path = Path(dir_path)
+    wt103_path  = Path(wt103_path)
     for p in [dir_path, wt103_path]:
         assert p.exists(), f'Error: {p} does not exist.'
     wiki_itos_path = wt103_path / 'itos_wt103.pkl'

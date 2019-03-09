@@ -97,20 +97,23 @@ class RNN_Encoder(nn.Module):
         with set_grad_enabled(self.training):
             emb = self.encoder_with_dropout(input, dropout=self.dropoute if self.training else 0)
             emb = self.dropouti(emb)
-            raw_output = emb
-            new_hidden,raw_outputs,outputs = [],[],[]
-            for l, (rnn,drop) in enumerate(zip(self.rnns, self.dropouths)):
-                current_input = raw_output
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    raw_output, new_h = rnn(raw_output, self.hidden[l])
-                new_hidden.append(new_h)
-                raw_outputs.append(raw_output)
-                if l != self.n_layers - 1: raw_output = drop(raw_output)
-                outputs.append(raw_output)
-
-            self.hidden = repackage_var(new_hidden)
+            outputs, raw_outputs = self.forward_from_embedding(emb)
         return raw_outputs, outputs
+
+    def forward_from_embedding(self, emb):
+        raw_output = emb
+        new_hidden, raw_outputs, outputs = [], [], []
+        for l, (rnn, drop) in enumerate(zip(self.rnns, self.dropouths)):
+            current_input = raw_output
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                raw_output, new_h = rnn(raw_output, self.hidden[l])
+            new_hidden.append(new_h)
+            raw_outputs.append(raw_output)
+            if l != self.n_layers - 1: raw_output = drop(raw_output)
+            outputs.append(raw_output)
+        self.hidden = repackage_var(new_hidden)
+        return outputs, raw_outputs
 
     def one_hidden(self, l):
         nh = (self.n_hid if l != self.n_layers - 1 else self.emb_sz)//self.ndir
@@ -143,6 +146,7 @@ class MultiBatchRNN(RNN_Encoder):
                 raw_outputs.append(r)
                 outputs.append(o)
         return self.concat(raw_outputs), self.concat(outputs)
+
 
 class LinearDecoder(nn.Module):
     initrange=0.1

@@ -4,6 +4,7 @@ from .core import *
 from .layer_optimizer import *
 from .swa import *
 from .fp16 import *
+from .vat import VATLoss
 
 IS_TORCH_04 = LooseVersion(torch.__version__) >= LooseVersion('0.4')
 
@@ -31,10 +32,11 @@ def num_features(m):
 def torch_item(x): return x.item() if hasattr(x,'item') else x[0]
 
 class Stepper():
-    def __init__(self, m, opt, crit, clip=0, reg_fn=None, fp16=False, loss_scale=1):
+    def __init__(self, m, opt, crit, clip=0, reg_fn=None, fp16=False, loss_scale=1, do_vat=False):
         self.m,self.opt,self.crit,self.clip,self.reg_fn = m,opt,crit,clip,reg_fn
         self.fp16 = fp16
         self.reset(True)
+        self.do_vat = do_vat
         if self.fp16: self.fp32_params = copy_model_to_fp32(m, opt)
         self.loss_scale = loss_scale
 
@@ -52,6 +54,8 @@ class Stepper():
         if self.fp16: self.m.zero_grad()
         else: self.opt.zero_grad()
         loss = raw_loss = self.crit(output, y)
+        if self.do_vat:
+            loss += VATLoss().forward(self.m, xs)
         if self.loss_scale != 1: assert(self.fp16); loss = loss*self.loss_scale
         if self.reg_fn: loss = self.reg_fn(output, xtra, raw_loss)
         loss.backward()

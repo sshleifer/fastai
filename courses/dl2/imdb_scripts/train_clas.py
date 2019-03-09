@@ -79,9 +79,9 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
               layers=[em_sz*3, 50, c], drops=[dps[4], 0.1],
               dropouti=dps[0], wdrop=dps[1], dropoute=dps[2], dropouth=dps[3])
 
-    learn = RNN_Learner(md, TextModel(to_gpu(m)), opt_fn=opt_fn)
+    learn = RNN_Learner(md, TextModel(to_gpu(m)), opt_fn=opt_fn, do_vat=True)
     learn.reg_fn = partial(seq2seq_reg, alpha=2, beta=1)
-    learn.clip = .25
+    learn.clip = 25
     learn.metrics = [accuracy]
 
     lrm = 2.6
