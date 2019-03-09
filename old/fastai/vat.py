@@ -2,6 +2,7 @@ import contextlib
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .core import no_grad_context
 
 
 @contextlib.contextmanager
@@ -35,7 +36,8 @@ class VATLoss(nn.Module):
 
     def forward(self, model, x):
 
-        with torch.no_grad():
+        #with torch.no_grad(): # what is predecessor?
+        with no_grad_context():
             pred = F.softmax(model(x), dim=1)
 
         # prepare random unit tensor
