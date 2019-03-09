@@ -71,7 +71,7 @@ class VATLoss(nn.Module):
             # calc LDS
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
-            lds = F.kl_div(logp_hat, pred, reduction='batchmean')
+            lds = F.kl_div(logp_hat, pred)
 
         return lds
 
