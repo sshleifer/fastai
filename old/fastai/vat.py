@@ -76,10 +76,12 @@ class VATLoss(nn.Module):
                     print(f'attack.requires_grad: {attack.requires_grad}')
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
-                    adv_distance = F.kl_div(logp_hat, pred,)
-                    #attack.retain_grad()
-                    adv_distance.backward() # does this change attack?
+                    adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
+                    attack.retain_grad()  # needed to make attack.grad not None
+                    #assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     require_nonleaf_grad(adv_distance)
+                    adv_distance.backward() # does this change attack?
+
                     print('grad: attack.grad')
                     #print
                     assert attack.grad is not None
