@@ -63,7 +63,10 @@ class VATLoss(nn.Module):
 
                     #pred_hat, raw_out, out = model(x + self.xi * d)
                     logp_hat = F.log_softmax(pred_hat, dim=1)
-                    adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
+                    #kl_div(input, target, size_average=True)
+                    adv_distance = F.kl_div(logp_hat, pred,
+                                            # reduction='batchmean'
+                                            )
                     adv_distance.backward()
                     d = _l2_normalize(d.grad)
                     model.zero_grad()
