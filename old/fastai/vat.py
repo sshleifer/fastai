@@ -45,18 +45,19 @@ class VATLoss(nn.Module):
         # prepare random unit tensor
         rnn = model[0]
         emb_shape = (32, rnn.emb_size)
-        d = V(torch.rand(emb_shape).sub(0.5), requires_grad=True)
-        d = _l2_normalize(d)
 
+        emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
+        emb = model[0].dropouti(emb)
+        print(f'emb: {emb.shape}')
+
+        d = V_(torch.rand(emb_shape).sub(0.5), requires_grad=True, volatile=True)
+        d = _l2_normalize(d)
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
             # calc adversarial direction
                 for _ in range(self.ip):
                     # problem here is that we are trying to perturb word ids...
 
-                    emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
-                    emb = model[0].dropouti(emb)
-                    print(f'emb: {emb.shape}')
 
                     rnn_out = model[0].forward_from_embedding(emb + self.xi * d)
                     pred_hat, _, __ = model[1].forward(rnn_out)
