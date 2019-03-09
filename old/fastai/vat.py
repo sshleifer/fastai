@@ -40,7 +40,7 @@ class VATLoss(nn.Module):
         #with torch.no_grad(): # what is predecessor?
         l_x, raw_outputs, outputs = model(x)
         with no_grad_context():
-            pred = F.softmax(l_x, dim=1)
+            pred = F.softmax(l_x, dim=1).detach()
 
         # prepare random unit tensor
         rnn = model[0]
@@ -64,7 +64,7 @@ class VATLoss(nn.Module):
                     #pred_hat, raw_out, out = model(x + self.xi * d)
                     logp_hat = F.log_softmax(pred_hat, dim=1)
                     #kl_div(input, target, size_average=True)
-                    adv_distance = F.kl_div(logp_hat, pred,
+                    adv_distance = F.kl_div(logp_hat, pred, #detach(),
                                             # reduction='batchmean'
                                             )
                     adv_distance.backward()
