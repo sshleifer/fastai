@@ -18,9 +18,10 @@ def _disable_tracking_bn_stats(model):
 
 
 def _l2_normalize(d):
-    d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
-    d /= torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8
-    return d
+    #d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
+    nrm = torch.norm(d, p=2, dim=1)+ 1e-8
+    return d.div(nrm.view(nrm.shape[0], 1).expand_as(d) + 1e-8
+            )
 
 
 class VATLoss(nn.Module):
@@ -47,10 +48,10 @@ class VATLoss(nn.Module):
         d = _l2_normalize(d)
 
         with _disable_tracking_bn_stats(model):
-            with set_grad_enabled():
+            with set_grad_enabled(model.training):
             # calc adversarial direction
                 for _ in range(self.ip):
-                    pred_hat, raw_out, out = model(x + self.xi * d)
+                    pred_hat, raw_out, out = model(x + self.xi * d.data)
                     logp_hat = F.log_softmax(pred_hat, dim=1)
                     adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
                     adv_distance.backward()
