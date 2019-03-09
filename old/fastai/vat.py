@@ -59,10 +59,11 @@ class VATLoss(nn.Module):
             with set_grad_enabled(model.training):
             # calc adversarial direction
                 for _ in range(self.ip):
-                    attack.requires_grad_(True)
-                    attack = attack * self.xi
+                    #attack.requires_grad_(True)
+                    #attack = attack * self.xi
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
                     adv_distance = F.kl_div(logp_hat, pred,)
+                    attack.retain_grad()
                     adv_distance.backward() # does this change attack?
                     attack = _l2_normalize(attack.grad)  # breaks cause grad is None
                     model.zero_grad()
