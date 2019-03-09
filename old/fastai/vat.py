@@ -36,6 +36,9 @@ class VATLoss(nn.Module):
         self.ip = ip
 
     def forward(self, model, x):
+        '''We want this code to work, and to allow effect gradient computations of weights indirectly.
+        We do not need attack connected to the graph after.
+        '''
 
         #with torch.no_grad(): # what is predecessor?
         l_x, raw_outputs, outputs = model(x)
@@ -48,12 +51,8 @@ class VATLoss(nn.Module):
 
         emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
         emb = model[0].dropouti(emb).detach()
-        print(f'emb: {emb.shape}')
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
         attack = _l2_normalize(attack)
-
-        start = attack[0][0]
-        #print(f'attack[o]: {start}')
 
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
@@ -61,6 +60,7 @@ class VATLoss(nn.Module):
                 for _ in range(self.ip):
                     #attack.requires_grad_(True)
                     #attack = attack * self.xi
+                    print(f'attack.requires_grad: {attack.requires_grad}')
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
                     adv_distance = F.kl_div(logp_hat, pred,)
                     attack.retain_grad()
@@ -72,7 +72,8 @@ class VATLoss(nn.Module):
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
             lds = F.kl_div(logp_hat, pred)
-
+        print('Is volatile', lds.is_volatile)
+        attack.detach()
         return lds
 
     def seq_rnn_emb2logits(self, model, emb, attack):
