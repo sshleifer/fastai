@@ -47,14 +47,15 @@ class VATLoss(nn.Module):
         emb_shape = (32, rnn.emb_size)
 
         emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
-        emb = model[0].dropouti(emb)
+        emb = model[0].dropouti(emb).detach()
         print(f'emb: {emb.shape}')
 
 
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
 
         attack = _l2_normalize(attack)
-        print(f'attack[o]: {attack[0]}')
+        start = attack[0][0]
+        print(f'attack[o]: {}')
 
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
@@ -69,6 +70,7 @@ class VATLoss(nn.Module):
                                             )
                     #assert attack.grad is not None, '1. dgrad None'
                     adv_distance.backward() # does this change attack?
+                    assert attack != attack[0]
                     #assert attack.grad is not None, '2. dgrad Nonep'
                     attack = _l2_normalize(attack.grad)
                     model.zero_grad()
