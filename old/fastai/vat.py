@@ -19,7 +19,7 @@ def _disable_tracking_bn_stats(model):
 
 def _l2_normalize(d):
     #d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
-    nrm = torch.norm(d, p=2, dim=1)+ 1e-8
+    nrm = torch.norm(d, p=2, dim=1) + 1e-8
     return d.div(nrm.view(nrm.shape[0], 1).expand_as(d) + 1e-8)
 
 
@@ -43,6 +43,7 @@ class VATLoss(nn.Module):
             pred = F.softmax(l_x, dim=1)
 
         # prepare random unit tensor
+        emb_shape = (32, model.emb_size)
         d = V(torch.rand(x.shape).sub(0.5))
         d = _l2_normalize(d)
 
@@ -51,6 +52,13 @@ class VATLoss(nn.Module):
             # calc adversarial direction
                 for _ in range(self.ip):
                     # problem here is that we are trying to perturb word ids...
+
+                    emb = model.encoder_with_dropout(x, dropout=model.dropoute if model.training else 0)
+                    emb = model.dropouti(emb)
+                    print(f'emb: {emb.shape}')
+
+                    pred_hat, raw_out, out = model.forward_from_embedding(emb + self.xi * d)
+
                     pred_hat, raw_out, out = model(x + self.xi * d)
                     logp_hat = F.log_softmax(pred_hat, dim=1)
                     adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')

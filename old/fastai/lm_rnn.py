@@ -60,6 +60,7 @@ class RNN_Encoder(nn.Module):
         super().__init__()
         self.ndir = 2 if bidir else 1
         self.bs, self.qrnn = 1, qrnn
+        #self.emb_sz
         self.encoder = nn.Embedding(ntoken, emb_sz, padding_idx=pad_token)
         self.encoder_with_dropout = EmbeddingDropout(self.encoder)
         if self.qrnn:
@@ -97,7 +98,7 @@ class RNN_Encoder(nn.Module):
         with set_grad_enabled(self.training):
             emb = self.encoder_with_dropout(input, dropout=self.dropoute if self.training else 0)
             emb = self.dropouti(emb)
-            outputs, raw_outputs = self.forward_from_embedding(emb)
+            raw_outputs, outputs = self.forward_from_embedding(emb)
         return raw_outputs, outputs
 
     def forward_from_embedding(self, emb):
@@ -113,7 +114,7 @@ class RNN_Encoder(nn.Module):
             if l != self.n_layers - 1: raw_output = drop(raw_output)
             outputs.append(raw_output)
         self.hidden = repackage_var(new_hidden)
-        return outputs, raw_outputs
+        return raw_outputs, outputs
 
     def one_hidden(self, l):
         nh = (self.n_hid if l != self.n_layers - 1 else self.emb_sz)//self.ndir
