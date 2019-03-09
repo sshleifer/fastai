@@ -75,7 +75,7 @@ class VATLoss(nn.Module):
                     #attack.data.grad.zero_()
 
             # calc LDS
-            attack.detach()
+            # attack.detach()
             assert not attack.volatile
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
