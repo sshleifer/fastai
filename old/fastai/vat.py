@@ -45,7 +45,7 @@ class VATLoss(nn.Module):
         # prepare random unit tensor
         rnn = model[0]
         emb_shape = (32, rnn.emb_size)
-        d = V(torch.rand(emb_shape).sub(0.5))
+        d = V(torch.rand(emb_shape).sub(0.5), requires_grad=True)
         d = _l2_normalize(d)
 
         with _disable_tracking_bn_stats(model):
