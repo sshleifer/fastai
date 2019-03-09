@@ -23,6 +23,12 @@ def _l2_normalize(d):
     return d.div(nrm.view(nrm.shape[0], 1).expand_as(d) + 1e-8)
 
 
+def require_nonleaf_grad(v):
+    def hook(g):
+        v.grad_nonleaf = g
+
+    v.register_hook(hook)
+
 class VATLoss(nn.Module):
     def __init__(self, xi=10.0, eps=1.0, ip=1):
         """VAT loss
@@ -59,6 +65,7 @@ class VATLoss(nn.Module):
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True,
                     volatile=False)
         attack = _l2_normalize(attack)
+        assert not attack.volatile, 'attack volatile before power iteration'
 
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
@@ -68,19 +75,22 @@ class VATLoss(nn.Module):
                     #attack = attack * self.xi
                     print(f'attack.requires_grad: {attack.requires_grad}')
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
+                    assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, pred,)
-                    attack.retain_grad()
+                    #attack.retain_grad()
                     adv_distance.backward() # does this change attack?
+                    require_nonleaf_grad(adv_distance)
                     print('grad: attack.grad')
                     #print
                     assert attack.grad is not None
+                    assert not attack.volatile, 'attack volatile after adv_dist.backward()'
                     attack = _l2_normalize(attack.grad)  # breaks cause grad is None
                     # nans in attck?
                     model.zero_grad()
                     #attack.data.grad.zero_()
 
             # calc LDS
-            attack.zero_grad()
+            # attack.zero_grad()
             assert not attack.volatile
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
