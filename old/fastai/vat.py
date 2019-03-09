@@ -55,7 +55,7 @@ class VATLoss(nn.Module):
 
         attack = _l2_normalize(attack)
         start = attack[0][0]
-        print(f'attack[o]: {}')
+        #print(f'attack[o]: {start}')
 
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
