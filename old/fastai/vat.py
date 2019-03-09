@@ -50,8 +50,12 @@ class VATLoss(nn.Module):
         emb = model[0].dropouti(emb)
         print(f'emb: {emb.shape}')
 
+
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
+
         attack = _l2_normalize(attack)
+        print(f'attack[o]: {attack[0]}')
+
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
             # calc adversarial direction
@@ -63,9 +67,9 @@ class VATLoss(nn.Module):
                     adv_distance = F.kl_div(logp_hat, pred, #detach(),
                                             # reduction='batchmean'
                                             )
-                    assert attack.grad is not None, '1. dgrad None'
-                    adv_distance.backward()
-                    assert attack.grad is not None, '2. dgrad Nonep'
+                    #assert attack.grad is not None, '1. dgrad None'
+                    adv_distance.backward() # does this change attack?
+                    #assert attack.grad is not None, '2. dgrad Nonep'
                     attack = _l2_normalize(attack.grad)
                     model.zero_grad()
 
