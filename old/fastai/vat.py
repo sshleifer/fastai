@@ -42,15 +42,15 @@ class VATLoss(nn.Module):
 
         #with torch.no_grad(): # what is predecessor?
         l_x, raw_outputs, outputs = model(x)
-        with no_grad_context():
-            pred = F.softmax(l_x, dim=1).detach()
+        with no_grad_context():  # does adversarial_text use logits?
+            pred = F.softmax(l_x, dim=1)#.detach()
 
         # prepare random unit tensor
         rnn = model[0]
         emb_shape = (32, rnn.emb_size)
 
         emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
-        emb = model[0].dropouti(emb).detach()
+        emb = model[0].dropouti(emb)#.detach()
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True,
                     volatile=False)
         attack = _l2_normalize(attack)
@@ -75,7 +75,7 @@ class VATLoss(nn.Module):
                     #attack.data.grad.zero_()
 
             # calc LDS
-            # attack.detach()
+            attack.zero_grad()
             assert not attack.volatile
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
