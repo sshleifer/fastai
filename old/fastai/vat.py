@@ -70,16 +70,15 @@ class VATLoss(nn.Module):
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
             # calc adversarial direction
-                for _ in range(self.ip):
+                for i in range(self.ip):
                     #attack.requires_grad_(True)
                     #attack = attack * self.xi
                     print(f'attack.requires_grad: {attack.requires_grad}')
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
-                    # attack.retain_grad()  # needed to make attack.grad not None
-                    #assert not attack.volatile, 'attack volatile before adv_dist.backward()'
-                    require_nonleaf_grad(adv_distance)
+                    attack.retain_grad()  # needed to make attack.grad not None
+                    assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     adv_distance.backward() # does this change attack?
 
                     print('grad: attack.grad')
@@ -87,12 +86,16 @@ class VATLoss(nn.Module):
                     assert attack.grad is not None
                     assert not attack.volatile, 'attack volatile after adv_dist.backward()'
                     attack = _l2_normalize(attack.grad)  # breaks cause grad is None
-                    # nans in attck?
+                    # nans in attack?
                     model.zero_grad()
                     #attack.data.grad.zero_()
 
             # calc LDS
             # attack.zero_grad()
+
+            if attack.volatile:
+                attack = attack.detach()
+                attack = V_(attack.data, requires_grad=False)
             assert not attack.volatile
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
