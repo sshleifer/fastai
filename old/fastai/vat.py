@@ -69,6 +69,7 @@ class VATLoss(nn.Module):
                                             # reduction='batchmean'
                                             )
                     adv_distance.backward()
+                    assert d.grad is not None
                     d = _l2_normalize(d.grad)
                     model.zero_grad()
 
