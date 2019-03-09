@@ -67,6 +67,7 @@ class VATLoss(nn.Module):
                     adv_distance.backward() # does this change attack?
                     attack = _l2_normalize(attack.grad)  # breaks cause grad is None
                     model.zero_grad()
+                    attack.data.grad.zero_()
 
             # calc LDS
             r_adv = attack * self.eps

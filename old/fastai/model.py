@@ -54,10 +54,13 @@ class Stepper():
         if self.fp16: self.m.zero_grad()
         else: self.opt.zero_grad()
         loss = raw_loss = self.crit(output, y)
-        if self.do_vat:
-            loss += VATLoss().forward(self.m, *xs)
+
         if self.loss_scale != 1: assert(self.fp16); loss = loss*self.loss_scale
         if self.reg_fn: loss = self.reg_fn(output, xtra, raw_loss)
+        if self.do_vat:
+            vat_loss = VATLoss().forward(self.m, *xs)
+            print(f'vat_loss volatile: {vat_loss.volatile}, loss: {loss.volatile}')
+            loss = loss + vat_loss
         loss.backward()
         if self.fp16: update_fp32_grads(self.fp32_params, self.m)
         if self.loss_scale != 1:
