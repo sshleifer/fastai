@@ -51,7 +51,8 @@ class VATLoss(nn.Module):
 
         emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
         emb = model[0].dropouti(emb).detach()
-        attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
+        attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True,
+                    volatile=False)
         attack = _l2_normalize(attack)
 
         with _disable_tracking_bn_stats(model):
@@ -65,16 +66,22 @@ class VATLoss(nn.Module):
                     adv_distance = F.kl_div(logp_hat, pred,)
                     attack.retain_grad()
                     adv_distance.backward() # does this change attack?
+                    print('grad: attack.grad')
+                    #print
+                    assert attack.grad is not None
                     attack = _l2_normalize(attack.grad)  # breaks cause grad is None
+                    # nans in attck?
                     model.zero_grad()
-                    attack.data.grad.zero_()
+                    #attack.data.grad.zero_()
 
             # calc LDS
+            attack.detach()
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
             lds = F.kl_div(logp_hat, pred)
         #print('Is volatile', lds.is_volatile)
-        attack.detach()
+
+        #lds.volatiles
         return lds
 
     def seq_rnn_emb2logits(self, model, emb, attack):
