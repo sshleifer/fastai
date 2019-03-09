@@ -50,7 +50,7 @@ class VATLoss(nn.Module):
         emb = model[0].dropouti(emb)
         print(f'emb: {emb.shape}')
 
-        attack = V_(torch.rand(emb_shape).sub(0.5), requires_grad=True)
+        attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
         attack = _l2_normalize(attack)
         with _disable_tracking_bn_stats(model):
             with set_grad_enabled(model.training):
