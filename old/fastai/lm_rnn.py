@@ -60,7 +60,7 @@ class RNN_Encoder(nn.Module):
         super().__init__()
         self.ndir = 2 if bidir else 1
         self.bs, self.qrnn = 1, qrnn
-        #self.emb_sz
+        self.emb_sz = emb_sz
         self.encoder = nn.Embedding(ntoken, emb_sz, padding_idx=pad_token)
         self.encoder_with_dropout = EmbeddingDropout(self.encoder)
         if self.qrnn:
