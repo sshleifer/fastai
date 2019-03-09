@@ -49,10 +49,7 @@ class VATLoss(nn.Module):
         emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
         emb = model[0].dropouti(emb).detach()
         print(f'emb: {emb.shape}')
-
-
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
-
         attack = _l2_normalize(attack)
 
         start = attack[0][0]
@@ -63,18 +60,11 @@ class VATLoss(nn.Module):
             # calc adversarial direction
                 for _ in range(self.ip):
                     attack.requires_grad_(True)
-                    #attac
-
-                    logp_hat = self.seq_rnn_emb2logits(model, emb, attack * self.xi)
-
-                    adv_distance = F.kl_div(logp_hat, pred, #detach(),
-                                            # reduction='batchmean'
-                                            )
-                    #assert attack.grad is not None, '1. dgrad None'
+                    attack = attack * self.xi
+                    logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
+                    adv_distance = F.kl_div(logp_hat, pred,)
                     adv_distance.backward() # does this change attack?
-                    #assert attack[0][0] != start
-                    ##assert attack.grad is not None, '2. dgrad Nonep'
-                    attack = _l2_normalize(attack.grad)
+                    attack = _l2_normalize(attack.grad)  # breaks cause grad is None
                     model.zero_grad()
 
             # calc LDS
