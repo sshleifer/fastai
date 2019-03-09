@@ -70,7 +70,7 @@ class VATLoss(nn.Module):
                                             )
                     #assert attack.grad is not None, '1. dgrad None'
                     adv_distance.backward() # does this change attack?
-                    assert attack != attack[0]
+                    assert attack[0][0] != start
                     #assert attack.grad is not None, '2. dgrad Nonep'
                     attack = _l2_normalize(attack.grad)
                     model.zero_grad()
