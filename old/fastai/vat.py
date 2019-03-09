@@ -56,6 +56,7 @@ class VATLoss(nn.Module):
             with set_grad_enabled(model.training):
             # calc adversarial direction
                 for _ in range(self.ip):
+                    break
                     logp_hat = self.seq_rnn_emb2logits(model, emb, attack * self.xi)
 
                     adv_distance = F.kl_div(logp_hat, pred, #detach(),
