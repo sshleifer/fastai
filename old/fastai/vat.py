@@ -43,8 +43,9 @@ class VATLoss(nn.Module):
             pred = F.softmax(l_x, dim=1)
 
         # prepare random unit tensor
-        emb_shape = (32, model.emb_size)
-        d = V(torch.rand(x.shape).sub(0.5))
+        rnn = model[0]
+        emb_shape = (32, rnn.emb_size)
+        d = V(torch.rand(emb_shape).sub(0.5))
         d = _l2_normalize(d)
 
         with _disable_tracking_bn_stats(model):
@@ -53,13 +54,14 @@ class VATLoss(nn.Module):
                 for _ in range(self.ip):
                     # problem here is that we are trying to perturb word ids...
 
-                    emb = model.encoder_with_dropout(x, dropout=model.dropoute if model.training else 0)
-                    emb = model.dropouti(emb)
+                    emb = model[0].encoder_with_dropout(x, dropout=model.dropoute if model.training else 0)
+                    emb = model[0].dropouti(emb)
                     print(f'emb: {emb.shape}')
 
-                    pred_hat, raw_out, out = model.forward_from_embedding(emb + self.xi * d)
+                    rnn_out = model[0].forward_from_embedding(emb + self.xi * d)
+                    pred_hat, _, __ = model[1].forward(rnn_out)
 
-                    pred_hat, raw_out, out = model(x + self.xi * d)
+                    #pred_hat, raw_out, out = model(x + self.xi * d)
                     logp_hat = F.log_softmax(pred_hat, dim=1)
                     adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
                     adv_distance.backward()
