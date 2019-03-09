@@ -47,23 +47,21 @@ class VATLoss(nn.Module):
         '''
 
         #with torch.no_grad(): # what is predecessor?
-
+        sl, bs = x.shape
         with no_grad_context():
-            l_x, _, __ = model(x)
             # 1) this context manager doesnt do much idt
+            l_x, _, __ = model(x)
             # 2) does adversarial_text use logits?
             pred = F.softmax(l_x, dim=1)#.detach()
         pred = pred.detach()
-        l_x = l_x.detach()
 
         # prepare random unit tensor
         rnn = model[0]
-        emb_shape = (32, rnn.emb_size)
+        #emb_shape = (bs, rnn.emb_size)
 
-        emb = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
-        emb = model[0].dropouti(emb)#.detach()
-        attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True,
-                    volatile=False)
+        embedded = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
+        embedded = model[0].dropouti(embedded).detach()
+        attack = V_(to_gpu(torch.rand(embedded.shape).sub(0.5)), requires_grad=True, volatile=False)
         attack = _l2_normalize(attack)
         assert not attack.volatile, 'attack volatile before power iteration'
 
@@ -74,15 +72,12 @@ class VATLoss(nn.Module):
                     #attack.requires_grad_(True)
                     #attack = attack * self.xi
                     print(f'attack.requires_grad: {attack.requires_grad}')
-                    logp_hat = self.seq_rnn_emb2logits(model, emb, attack)
+                    logp_hat = self.seq_rnn_emb2logits(model, embedded, attack)
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
                     attack.retain_grad()  # needed to make attack.grad not None
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     adv_distance.backward() # does this change attack?
-
-                    print('grad: attack.grad')
-                    #print
                     assert attack.grad is not None
                     assert not attack.volatile, 'attack volatile after adv_dist.backward()'
                     attack = _l2_normalize(attack.grad)  # breaks cause grad is None
@@ -98,7 +93,7 @@ class VATLoss(nn.Module):
                 attack = V_(attack.data, requires_grad=False)
             assert not attack.volatile
             r_adv = attack * self.eps
-            logp_hat = self.seq_rnn_emb2logits(model, emb, r_adv)
+            logp_hat = self.seq_rnn_emb2logits(model, embedded, r_adv)
             lds = F.kl_div(logp_hat, pred)
         assert not lds.volatile
         return lds
