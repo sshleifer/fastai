@@ -54,6 +54,7 @@ class VATLoss(nn.Module):
         attack = V_(to_gpu(torch.rand(emb_shape).sub(0.5)), requires_grad=True)
 
         attack = _l2_normalize(attack)
+        attack.requires_grad_(True)
         start = attack[0][0]
         #print(f'attack[o]: {start}')
 
