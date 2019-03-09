@@ -43,10 +43,12 @@ class VATLoss(nn.Module):
         #with torch.no_grad(): # what is predecessor?
 
         with no_grad_context():
-            l_x, raw_outputs, outputs = model(x)
+            l_x, _, __ = model(x)
             # 1) this context manager doesnt do much idt
             # 2) does adversarial_text use logits?
             pred = F.softmax(l_x, dim=1)#.detach()
+        pred = pred.detach()
+        l_x = l_x.detach()
 
         # prepare random unit tensor
         rnn = model[0]
