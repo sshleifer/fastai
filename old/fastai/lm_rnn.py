@@ -3,7 +3,7 @@ from .imports import *
 from .torch_imports import *
 from .rnn_reg import LockedDropout,WeightDrop,EmbeddingDropout
 from .model import Stepper
-from .core import set_grad_enabled
+from .core import set_grad_enabled, to_gpu
 
 IS_TORCH_04 = LooseVersion(torch.__version__) >= LooseVersion('0.4')
 
@@ -118,8 +118,12 @@ class RNN_Encoder(nn.Module):
 
     def one_hidden(self, l):
         nh = (self.n_hid if l != self.n_layers - 1 else self.emb_sz)//self.ndir
-        if IS_TORCH_04: return Variable(self.weights.new(self.ndir, self.bs, nh).zero_())
-        else: return Variable(self.weights.new(self.ndir, self.bs, nh).zero_(), volatile=not self.training)
+        if IS_TORCH_04:
+            return Variable(
+                to_gpu(self.weights.new(self.ndir, self.bs, nh).zero_()))
+        else:
+            return Variable(
+                to_gpu(self.weights.new(self.ndir, self.bs, nh).zero_(), volatile=not self.training))
 
     def reset(self):
         if self.qrnn: [r.reset() for r in self.rnns]
