@@ -82,11 +82,11 @@ class VATLoss(nn.Module):
                     # gradients through the adversarial example construction process.
 
                     attack_grad = torch.autograd.grad(adv_distance, attack)
-
-                    adv_distance.backward() # does this change attack?
-                    assert attack.grad is not None
-                    assert not attack.volatile, 'attack volatile after adv_dist.backward()'
-                    attack = _l2_normalize(attack.grad)  # breaks cause grad is None
+                    attack = attack_grad
+                    #adv_distance.backward() # does this change attack?
+                    #assert attack.grad is not None
+                    assert not attack.volatile, 'attack volatile after grad setting'
+                    #attack = _l2_normalize(attack.grad)  # breaks cause grad is None
                     # nans in attack?
                     model.zero_grad()
                     #attack.data.grad.zero_()
