@@ -48,7 +48,13 @@ class Stepper():
             self.m.reset()
             if self.fp16: self.fp32_params = copy_model_to_fp32(self.m, self.opt)
 
+    def _setup_vat_logging(self, model, epoch):
+        if not hasattr(model, 'vat_loss_logs'):
+            model.vat_loss_logs = {}
+        model.vat_loss_logs[epoch] = []
+
     def step(self, xs, y, epoch):
+        self._setup_vat_logging(self.m, epoch)
         xtra = []
         output = self.m(*xs)
         if isinstance(output,tuple): output,*xtra = output
@@ -61,6 +67,7 @@ class Stepper():
         if self.do_vat:
             vat_loss = VATLoss().forward(self.m, *xs)
             # print(f'loss:{loss}, vat_loss: {vat_loss}')
+            self.m.vat_loss_logs[epoch].append((loss, vat_loss))
             loss = loss + vat_loss
         loss.backward()
         if self.fp16: update_fp32_grads(self.fp32_params, self.m)
