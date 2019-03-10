@@ -40,6 +40,7 @@ class Stepper():
         if self.fp16: self.fp32_params = copy_model_to_fp32(m, opt)
         self.loss_scale = loss_scale
 
+
     def reset(self, train=True):
         if train: apply_leaf(self.m, set_train_mode)
         else: self.m.eval()
@@ -59,7 +60,7 @@ class Stepper():
         if self.reg_fn: loss = self.reg_fn(output, xtra, raw_loss)
         if self.do_vat:
             vat_loss = VATLoss().forward(self.m, *xs)
-            print(f'loss:{loss}, vat_loss: {vat_loss}')
+            # print(f'loss:{loss}, vat_loss: {vat_loss}')
             loss = loss + vat_loss
         loss.backward()
         if self.fp16: update_fp32_grads(self.fp32_params, self.m)
