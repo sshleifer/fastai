@@ -50,7 +50,8 @@ class VATLoss(nn.Module):
         #with torch.no_grad(): # what is predecessor?
         sl, bs = x.shape
         # 2) does adversarial_text use logits? Yes but they call sigmoid inside their KL helper
-        original_logits, _, __ = model(x).detach()
+        original_logits, _, __ = model(x)
+        original_logits = original_logits.detach()
 
 
         # prepare random unit tensor
