@@ -3,7 +3,7 @@ import html
 import fire
 
 from imdb_scripts.create_toks import make_csv_from_dir, copy_subset_of_files, create_toks
-
+from imdb_scripts.predict_with_classifier import run_tta_experiment
 from imdb_scripts.train_clas import train_clas
 from imdb_scripts.eval_clas import eval_clas
 from imdb_scripts.tok2id import tok2id
@@ -33,6 +33,7 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
         orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
+
                    do_vat=False, **classif_kwargs):
     experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if experiment_dir.exists() and not second_lang:
@@ -46,25 +47,41 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
     train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=lm_cl)
     # Train Classifier
     learn = train_clas(experiment_dir, 0, cl=classif_cl, do_vat=do_vat, **classif_kwargs)
+
     return learn.sched.rec_metrics
     # eval_clas(experiment_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
 
 import time
-def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
+
+
+def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None, eval_tta=False,
+                     do_baseline=True):
     reference_path = make_small_ds(src_path, None, n_train=n)
+    experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
+    results = {}
     start = time.time()
     es_metrics = run_experiment(
         'es', orig_small_data_dir=reference_path, lm_cl=10,
         n_to_copy=n_to_copy,
     )
     estime = time.time() - start
+    results.update({'btrans': es_metrics, 'btrans_time': estime})
+    if eval_tta:
+        start = time.time()
+        err_tab, tta_df = run_tta_experiment(experiment_dir / 'tmp' / 'itos.pkl',
+                                             experiment_dir / 'models' / 'clas_1.h5',
+                                             experiment_dir)
+
+        results.update({'tta_err_tab': err_tab, 'tta_df': tta_df, 'tta_time': time.time() - start})
+    if not do_baseline:
+        return results
 
     start = time.time()
     baseline_metrics = run_experiment(target_language, orig_small_data_dir=reference_path,
                                       n_to_copy=0)
     base_time = time.time() - start
-    return {'btrans': es_metrics, 'baseline': baseline_metrics,
-    'btrans_time': estime, 'baseline_time': base_time}
+    results.update({'baseline': baseline_metrics, 'baseline_time': base_time, })
+    return results
 
 
 def add_aug_files(target_language, small_data_dir, n_to_copy=None, subdir='train'):
