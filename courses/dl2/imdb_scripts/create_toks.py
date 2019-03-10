@@ -17,7 +17,7 @@ def make_dir_structure_under(path) -> None:
 
 
 def copy_subset_of_files(src_path: Path, dest_path, n=500,
-                         dirs=('test', 'train')):
+                         dirs=('test', 'train')) -> None:
     """More making small IMDB"""
     if isinstance(src_path, str):
         src_path = Path(src_path)
@@ -34,8 +34,8 @@ def copy_subset_of_files(src_path: Path, dest_path, n=500,
             full_dest_path = dest_path / sp.relative_to(src_path)
             make_dir_structure_under(full_dest_path)
             shutil.copy(sp, full_dest_path)
-
-
+    return
+    # should be under train
     sdir = src_path / 'unsup'
     if not sdir.exists():
         return
@@ -45,6 +45,16 @@ def copy_subset_of_files(src_path: Path, dest_path, n=500,
         dest_path = dest_path / sp.relative_to(src_path)
         make_dir_structure_under(dest_path)
         shutil.copy(sp, dest_path)
+
+
+
+def make_small_ds(src_path, dest_path, n_train, n_test=3000):
+    if dest_path is None:
+        dest_path = Path(f'/home/paperspace/imdb_{int(n_train/1000)}k_{int(n_test/1000)}k/')
+        dest_path.mkdir(exist_ok=True)
+        print(dest_path)
+    copy_subset_of_files(src_path, dest_path, dirs=('train',), n=n_train)
+    copy_subset_of_files(src_path, dest_path, dirs=('test',), n=n_test)
 
 
 

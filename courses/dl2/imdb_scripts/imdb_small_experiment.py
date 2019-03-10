@@ -19,10 +19,11 @@ ORIG_SMALL_DATA_DIR = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
 #big_data_dir = Path('/home/paperspace/text-augmentation/imdb')
 
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
-        orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=30, lm_cl=15):
+        orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4):
     small_data_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if small_data_dir.exists() and not second_lang:
         shutil.rmtree(small_data_dir)
+    if not second_lang:
         shutil.copytree(orig_small_data_dir, small_data_dir)
 
     add_aug_files(target_language, small_data_dir, n_to_copy=n_to_copy)
