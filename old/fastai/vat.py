@@ -98,9 +98,9 @@ class VATLoss(nn.Module):
         return lds
 
     def seq_rnn_emb2logits(self, model, emb, attack):
-        rnn_out = model[0].forward_from_embedding(emb + attack)
+        rnn_out: tuple = model[0].forward_from_embedding(emb + attack)
         #print(f'rnn_out shape: {rnn_out.shape}')
-        raise ValueError(f'rnn_out shape: {rnn_out.shape}')
+        raise ValueError(f'rnn_out shape: {rnn_out[0].shape, rnn_out[1].shape}')
         pred_hat, _, __ = model[1].forward(rnn_out)
         return pred_hat
         # return F.log_softmax(pred_hat, dim=1)
