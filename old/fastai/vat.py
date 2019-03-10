@@ -19,11 +19,12 @@ def _disable_tracking_bn_stats(model):
 
 def _l2_normalize(d):
     #d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
+    # TODO(SS): they use a stabler l2_norm in the adversarial text code
     nrm = torch.norm(d, p=2, dim=1) + 1e-8
-    return d.div(nrm.view(nrm.shape[0], 1, nrm.shape[1]).expand_as(d) + 1e-8)
-
+    return d.div(nrm.view(nrm.shape[0], 1, nrm.shape[1]).expand_as(d))
 
 def require_nonleaf_grad(v):
+    """Unused"""
     def hook(g):
         v.grad_nonleaf = g
 
@@ -77,6 +78,11 @@ class VATLoss(nn.Module):
                     adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
                     attack.retain_grad()  # needed to make attack.grad not None
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
+                    # the backpropagation algorithm should not be used to propagate
+                    # gradients through the adversarial example construction process.
+
+                    attack_grad = torch.autograd.grad(adv_distance, attack)
+
                     adv_distance.backward() # does this change attack?
                     assert attack.grad is not None
                     assert not attack.volatile, 'attack volatile after adv_dist.backward()'
