@@ -54,7 +54,7 @@ def get_preds_for_df_tta(model, stoi, all_txt):
 def run_tta_experiment(trained_classifier_filename, itos_filename, dir_path, num_classes=2):
     tta_df = make_tta_df(dir_path)
     stoi, model = load_model(itos_filename, trained_classifier_filename, num_classes)
-    tta_df['yhat'] = get_preds_for_df_tta()
+    tta_df['yhat'] = get_preds_for_df_tta(model, stoi, tta_df['text'].values)
     err_table, tta_df = analyze_tta_df(tta_df)
     #df_tta.to_msgpack(dir_path/'tta_res.mp')
     return err_table, tta_df
@@ -152,4 +152,4 @@ def predict_input(itos_filename, trained_classifier_filename, num_classes=2):
 
 
 if __name__ == '__main__':
-    fire.Fire(predict_input)
+    fire.Fire(run_tta_experiment)
