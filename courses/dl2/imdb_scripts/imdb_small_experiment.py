@@ -69,7 +69,8 @@ def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
 
 def add_aug_files(target_language, small_data_dir, n_to_copy=None, subdir='train'):
     aug_dir = Path(f'/home/paperspace/text-augmentation/imdb_{target_language}/')
-    selected_train = shuffle(list((small_data_dir / subdir/).glob('*/*.txt')))
+    glb = (small_data_dir / subdir).glob('*/*.txt')
+    selected_train = shuffle(list(glb))
     if n_to_copy is not None:
         selected_train = selected_train[:n_to_copy]
     assert aug_dir.exists()
