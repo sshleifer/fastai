@@ -89,7 +89,7 @@ def predict_text(stoi, model, text):
     tensor = to_gpu(torch.from_numpy(ary))
 
     # wrap in a torch Variable
-    variable = Variable(tensor)
+    variable = to_gpu(Variable(tensor))
 
     # do the predictions
     predictions = model(variable)
