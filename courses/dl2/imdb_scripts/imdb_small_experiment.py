@@ -17,12 +17,12 @@ ORIG_SMALL_DATA_DIR = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
 
 
 def make_small_ds(src_path, dest_path, n_train, n_test=3000):
+    shutil.rmtree(dest_path)
     if dest_path is None:
         dest_path = Path(f'/home/paperspace/imdb_{int(n_train/1000)}k_{int(n_test/1000)}k/')
         dest_path.mkdir(exist_ok=True)
         print(dest_path)
-    else:
-        shutil.rmtree(dest_path)
+
     copy_subset_of_files(src_path, dest_path, dirs=('train',), n=n_train)
     copy_subset_of_files(src_path, dest_path, dirs=('test',), n=n_test)
     prepare_tokens_and_labels(dest_path)
