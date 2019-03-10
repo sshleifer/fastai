@@ -61,7 +61,7 @@ def softmax(x):
     return exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
 
 
-def predict_text(stoi, model, text):
+def predict_text(stoi, model, texts):
     """Do the actual prediction on the text using the
         model and mapping files passed
     """
@@ -69,11 +69,10 @@ def predict_text(stoi, model, text):
     # prefix text with tokens:
     #   xbos: beginning of sentence
     #   xfld 1: we are using a single field here
-    input_str = 'xbos xfld 1 ' + text
+    texts = ['xbos xfld 1 ' + text for text in texts]
 
     # predictions are done on arrays of input.
     # We only have a single input, so turn it into a 1x1 array
-    texts = [input_str]
 
     # tokenize using the fastai wrapper around spacy
     tok = Tokenizer().proc_all_mp(partition_by_cores(texts))
@@ -96,8 +95,8 @@ def predict_text(stoi, model, text):
 
     # convert back to numpy
     numpy_preds = predictions.cpu().data.numpy()
-
-    return softmax(numpy_preds[0])[0]
+    print(f'np shape: {numpy_preds.shape}')
+    return softmax(numpy_preds[0])
 
 
 def predict_tta(tta_ds, itos_filename, trained_classifier_filename, num_classes=2):
@@ -138,7 +137,7 @@ def predict_input(itos_filename, trained_classifier_filename, num_classes=2):
         if text.strip() == 'q':
             break
         else:
-            scores = predict_text(stoi, model, text)
+            scores = predict_text(stoi, model, [text])
             print("Result id {0}, Scores: {1}".format(np.argmax(scores), scores))
 
 
