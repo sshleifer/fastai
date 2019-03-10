@@ -1,7 +1,7 @@
 import fire
 from fastai.text import *
 from fastai.lm_rnn import *
-
+import time
 
 def freeze_all_but(learner, n):
     c=learner.get_layer_groups()
@@ -16,7 +16,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     print(f'dir_path {dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; clas_id {clas_id}; bs {bs}; cl {cl}; backwards {backwards}; '
         f'dropmult {dropmult} unfreeze {unfreeze} startat {startat}; bpe {bpe}; use_clr {use_clr};'
         f'use_regular_schedule {use_regular_schedule}; use_discriminative {use_discriminative}; last {last};'
-        f'chain_thaw {chain_thaw}; from_scratch {from_scratch}; train_file_id {train_file_id}')
+        f'chain_thaw {chain_thaw}; from_scratch {from_scratch}; train_file_id {train_file_id}, do_vat:{do_vat}')
     if not hasattr(torch._C, '_cuda_setDevice'):
         print('CUDA not available. Setting device=-1.')
         cuda_id = -1
@@ -141,7 +141,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     else:
         n_cycles = 1
 
-    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=True)
+    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=do_vat)
 
 
     learn.save(final_clas_file)

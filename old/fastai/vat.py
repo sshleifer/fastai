@@ -77,7 +77,7 @@ class VATLoss(nn.Module):
                     logp_hat = self.seq_rnn_emb2logits(model, embedded, attack)
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
-                    attack.retain_grad()  # needed to make attack.grad not None
+                    # attack.retain_grad()  # needed to make attack.grad not None
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     # the backpropagation algorithm should not be used to propagate
                     # gradients through the adversarial example construction process.
