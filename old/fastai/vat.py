@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .core import no_grad_context, set_grad_enabled
 from .text import *
-
+SM = F.log_softmax
 
 @contextlib.contextmanager
 def _disable_tracking_bn_stats(model):
@@ -51,15 +51,16 @@ class VATLoss(nn.Module):
         sl, bs = x.shape
         # 2) does adversarial_text use logits? Yes but they call sigmoid inside their KL helper
         original_logits, _, __ = model(x)
-        original_logits = F.softmax(original_logits.detach(), 1) # bs, nclass
+        original_logits = SM(original_logits.detach(), 1) # bs, nclass
 
         rnn = model[0]
         #emb_shape = (bs, rnn.emb_size)
 
         embedded = rnn.encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
         embedded = rnn.dropouti(embedded).detach() # 3d [sl, bs, esize] (I think)
-        attack = V_(to_gpu(torch.rand(embedded.shape).sub(0.5)), requires_grad=True, volatile=False)
-        attack = _l2_normalize(attack)
+        attack = V_(_l2_normalize(to_gpu(torch.rand(embedded.shape).sub(0.5))),
+                    requires_grad=True, volatile=False)
+        #attack = _l2_normalize(attack)
         assert not attack.volatile, 'attack volatile before power iteration'
 
         with _disable_tracking_bn_stats(model):
@@ -99,4 +100,4 @@ class VATLoss(nn.Module):
         rnn_out: tuple = model[0].forward_from_embedding(emb + attack)
         pred_hat, _, __ = model[1].forward(rnn_out)
         #return pred_hat # a 2d tensor
-        return F.log_softmax(pred_hat, dim=1)
+        return SM(pred_hat, dim=1)
