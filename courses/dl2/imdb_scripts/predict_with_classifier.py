@@ -100,6 +100,19 @@ def predict_text(stoi, model, text):
     return softmax(numpy_preds[0])[0]
 
 
+def predict_tta(tta_ds, itos_filename, trained_classifier_filename, num_classes=2):
+    stoi, model = load_model(itos_filename, trained_classifier_filename, num_classes)
+    scores = []
+    for row in tta_ds:
+        row_scores = []
+        for text in row:
+            scores = predict_text(stoi, model, text)
+            row_scores.append(scores)
+        scores.append(row_scores)
+    return scores
+
+
+
 def predict_input(itos_filename, trained_classifier_filename, num_classes=2):
     """
     Loads a model and produces predictions on arbitrary input.
