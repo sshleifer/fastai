@@ -19,7 +19,8 @@ ORIG_SMALL_DATA_DIR = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
 #big_data_dir = Path('/home/paperspace/text-augmentation/imdb')
 
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
-        orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4):
+        orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
+                   do_vat=False):
     small_data_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if small_data_dir.exists() and not second_lang:
         shutil.rmtree(small_data_dir)
@@ -31,7 +32,8 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
     # Finetune LM
     train_lm(small_data_dir, WT103_PATH, early_stopping=True, cl=lm_cl)
     # Train Classifier
-    learn = train_clas(small_data_dir, 0, bs=64, cl=classif_cl)
+    learn = train_clas(small_data_dir, 0, bs=64, cl=classif_cl,
+                       do_vat=do_vat)
     return learn.sched.rec_metrics
     # eval_clas(small_data_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
 

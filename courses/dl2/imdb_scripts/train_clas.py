@@ -22,7 +22,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
         cuda_id = -1
     torch.cuda.set_device(cuda_id)
 
-    PRE = 'bwd_' if backwards else ''
+    PRE = 'bwd_' if backwards else 'fwd_'
     PRE = 'bpe_' + PRE if bpe else PRE
     IDS = 'bpe' if bpe else 'ids'
     train_file_id = train_file_id if train_file_id == '' else f'_{train_file_id}'
@@ -34,7 +34,10 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     final_clas_file = f'{PRE}{clas_id}clas_1'
     lm_file = f'{PRE}{lm_id}lm_enc'
     lm_path = dir_path / 'models' / f'{lm_file}.h5'
-    assert lm_path.exists(), f'Error: {lm_path} does not exist.'
+    if not lm_path.exists():
+        lm_file = f'{lm_id}lm_enc'
+        lm_path = dir_path / 'models' / f'{lm_file}.h5'
+        assert lm_path.exists(), f'Error: {lm_path} does not exist.'
 
     bptt,em_sz,nh,nl = 70,400,1150,3
     opt_fn = partial(optim.Adam, betas=(0.8, 0.99))

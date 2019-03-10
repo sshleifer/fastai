@@ -144,7 +144,7 @@ def fit(model, data, n_epochs, opt, crit, metrics=None, callbacks=None, stepper=
         for (*x,y) in t:
             batch_num += 1
             #print(f'batch_num: {batch_num}, x.shape:{V(x[0]).shape}')
-            if x[0].shape[1] == 1:
+            if x[0].shape[1] == 1:  # Hack to avoid BatchNorm error on 1d data
                 continue
             for cb in callbacks: cb.on_batch_begin()
             loss = model_stepper.step(V(x),V(y), epoch)
