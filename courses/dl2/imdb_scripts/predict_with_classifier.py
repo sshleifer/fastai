@@ -96,7 +96,7 @@ def predict_text(stoi, model, texts):
     # convert back to numpy
     numpy_preds = predictions.cpu().data.numpy()
     print(f'np shape: {numpy_preds.shape}')
-    return softmax(numpy_preds[0])
+    return softmax(numpy_preds)
 
 
 def predict_tta(tta_ds, itos_filename, trained_classifier_filename, num_classes=2):
