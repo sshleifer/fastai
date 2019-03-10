@@ -46,17 +46,22 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
     return learn.sched.rec_metrics
     # eval_clas(small_data_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
 
-
+import time
 def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
     reference_path = make_small_ds(src_path, None, n)
+    start = time.time()
     es_metrics = run_experiment(
-        target_language, orig_small_data_dir=reference_path, lm_cl=10,
+        'es', orig_small_data_dir=reference_path, lm_cl=10,
         n_to_copy=n_to_copy,
     )
+    estime = time.time() - start
 
+    start = time.time()
     baseline_metrics = run_experiment(target_language, orig_small_data_dir=reference_path,
                                       n_to_copy=0)
-    return {'btrans': es_metrics, 'baseline': baseline_metrics}
+    base_time = time.time() - start
+    return {'btrans': es_metrics, 'baseline': baseline_metrics,
+    'btrans_time': estime, 'baseline_time': base_time}
 
 
 def add_aug_files(target_language, small_data_dir, n_to_copy=None):
