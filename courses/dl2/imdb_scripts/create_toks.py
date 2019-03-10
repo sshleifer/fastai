@@ -48,15 +48,6 @@ def copy_subset_of_files(src_path: Path, dest_path, n=500,
 
 
 
-def make_small_ds(src_path, dest_path, n_train, n_test=3000):
-    if dest_path is None:
-        dest_path = Path(f'/home/paperspace/imdb_{int(n_train/1000)}k_{int(n_test/1000)}k/')
-        dest_path.mkdir(exist_ok=True)
-        print(dest_path)
-    copy_subset_of_files(src_path, dest_path, dirs=('train',), n=n_train)
-    copy_subset_of_files(src_path, dest_path, dirs=('test',), n=n_test)
-
-
 
 CLASSES = ['neg', 'pos', 'unsup']
 def read_texts(path, classes=CLASSES):

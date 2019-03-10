@@ -16,6 +16,15 @@ assert WT103_PATH.exists()
 ORIG_SMALL_DATA_DIR = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
 
 
+def make_small_ds(src_path, dest_path, n_train, n_test=3000):
+    if dest_path is None:
+        dest_path = Path(f'/home/paperspace/imdb_{int(n_train/1000)}k_{int(n_test/1000)}k/')
+        dest_path.mkdir(exist_ok=True)
+        print(dest_path)
+    copy_subset_of_files(src_path, dest_path, dirs=('train',), n=n_train)
+    copy_subset_of_files(src_path, dest_path, dirs=('test',), n=n_test)
+    return dest_path
+
 #big_data_dir = Path('/home/paperspace/text-augmentation/imdb')
 
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
@@ -36,6 +45,18 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
                        do_vat=do_vat)
     return learn.sched.rec_metrics
     # eval_clas(small_data_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
+
+
+def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
+    reference_path = make_small_ds(src_path, None, n)
+    es_metrics = run_experiment(
+        target_language, orig_small_data_dir=reference_path, lm_cl=10,
+        n_to_copy=n_to_copy,
+    )
+
+    baseline_metrics = run_experiment(target_language, orig_small_data_dir=reference_path,
+                                      n_to_copy=0)
+    return {'es': es_metrics, 'baseline': baseline_metrics}
 
 
 def add_aug_files(target_language, small_data_dir, n_to_copy=None):
