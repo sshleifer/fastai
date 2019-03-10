@@ -53,8 +53,7 @@ CLASSES = ['neg', 'pos', 'unsup']
 def read_texts(path, classes=CLASSES):
     texts,labels,fnames = [],[],[]
     for idx,label in enumerate(classes):
-        fnames = sorted(list((path/label).glob('*.*')))
-        for fname in fnames:
+        for fname in (path/label).glob('*.*'):
             texts.append(fname.open('r', encoding='utf-8').read())
             labels.append(idx)
             fnames.append(fname)
