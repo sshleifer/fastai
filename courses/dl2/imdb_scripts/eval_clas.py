@@ -13,7 +13,7 @@ def eval_clas(model_dir_path, val_dir=None, cuda_id=0, lm_id='', clas_id=None, b
         cuda_id = -1
     torch.cuda.set_device(cuda_id)
 
-    PRE = 'bwd_' if backwards else 'fwd_'
+    PRE = 'bwd_' if backwards else ''
     PRE = 'bpe_' + PRE if bpe else PRE
     IDS = 'bpe' if bpe else 'ids'
     model_dir_path = Path(model_dir_path)
