@@ -53,7 +53,7 @@ class VATLoss(nn.Module):
             # 1) this context manager doesnt do much idt
             l_x, _, __ = model(x)
             # 2) does adversarial_text use logits?
-            pred = F.softmax(l_x, dim=1)#.detach()
+            #pred = F.softmax(l_x, dim=1)#.detach()
         pred = pred.detach()
 
         # prepare random unit tensor
@@ -102,4 +102,5 @@ class VATLoss(nn.Module):
     def seq_rnn_emb2logits(self, model, emb, attack):
         rnn_out = model[0].forward_from_embedding(emb + attack)
         pred_hat, _, __ = model[1].forward(rnn_out)
-        return F.log_softmax(pred_hat, dim=1)
+        return pred_hat
+        # return F.log_softmax(pred_hat, dim=1)
