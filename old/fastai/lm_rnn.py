@@ -134,7 +134,8 @@ class MultiBatchRNN(RNN_Encoder):
         super().__init__(*args, **kwargs)
 
     def concat(self, arrs):
-        return [torch.cat([l[si] for l in arrs]) for si in range(len(arrs[0]))]
+        return [torch.cat([l[si] for l in arrs])
+                for si in range(len(arrs[0]))]
 
     def forward(self, input):
         sl,bs = input.size()
