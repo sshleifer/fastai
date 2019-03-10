@@ -49,12 +49,9 @@ class VATLoss(nn.Module):
 
         #with torch.no_grad(): # what is predecessor?
         sl, bs = x.shape
-        with no_grad_context():
-            # 1) this context manager doesnt do much idt
-            l_x, _, __ = model(x)
-            # 2) does adversarial_text use logits?
-            #pred = F.softmax(l_x, dim=1)#.detach()
-        pred = pred.detach()
+        # 2) does adversarial_text use logits? Yes but they call sigmoid inside their KL helper
+        original_logits, _, __ = model(x).detach()
+
 
         # prepare random unit tensor
         rnn = model[0]
@@ -80,7 +77,7 @@ class VATLoss(nn.Module):
                     raise ValueError(f'mask shape: {mask.shape}')
                     logp_hat *= mask
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
-                    adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
+                    adv_distance = F.kl_div(logp_hat, original_logits,)  # EOS Weights?
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     # the backpropagation algorithm should not be used to propagate
                     # gradients through the adversarial example construction process.
@@ -95,7 +92,7 @@ class VATLoss(nn.Module):
             assert not attack.volatile
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, embedded, r_adv)
-            lds = F.kl_div(logp_hat, pred)
+            lds = F.kl_div(logp_hat, original_logits)
         assert not lds.volatile
         return lds
 
