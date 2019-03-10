@@ -81,11 +81,12 @@ class VATLoss(nn.Module):
                     # the backpropagation algorithm should not be used to propagate
                     # gradients through the adversarial example construction process.
 
-                    attack_grad = torch.autograd.grad(adv_distance, attack)
+                    attack_grad, = torch.autograd.grad(adv_distance, attack)
+
                     attack = attack_grad
                     #adv_distance.backward() # does this change attack?
                     #assert attack.grad is not None
-                    assert not attack.volatile, 'attack volatile after grad setting'
+                    #assert not attack.volatile, 'attack volatile after grad setting'
                     #attack = _l2_normalize(attack.grad)  # breaks cause grad is None
                     # nans in attack?
                     model.zero_grad()
