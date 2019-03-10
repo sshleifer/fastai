@@ -95,7 +95,7 @@ class VATLoss(nn.Module):
             assert not attack.volatile
             r_adv = attack * self.eps
             logp_hat = self.seq_rnn_emb2logits(model, embedded, r_adv)
-            lds = F.kl_div(logp_hat, original_logits)
+            lds = F.kl_div(logp_hat.log(), original_logits)
         assert not lds.volatile
         return lds
 
