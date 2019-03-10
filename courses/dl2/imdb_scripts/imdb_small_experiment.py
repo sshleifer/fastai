@@ -33,7 +33,7 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
         orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
-                   do_vat=False):
+                   do_vat=False, **classif_kwargs):
     experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if experiment_dir.exists() and not second_lang:
         shutil.rmtree(experiment_dir)
@@ -45,8 +45,7 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
     # Finetune LM
     train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=lm_cl)
     # Train Classifier
-    learn = train_clas(experiment_dir, 0, bs=64, cl=classif_cl,
-                       do_vat=do_vat)
+    learn = train_clas(experiment_dir, 0, cl=classif_cl, do_vat=do_vat, **classif_kwargs)
     return learn.sched.rec_metrics
     # eval_clas(experiment_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
 
@@ -68,9 +67,9 @@ def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
     'btrans_time': estime, 'baseline_time': base_time}
 
 
-def add_aug_files(target_language, small_data_dir, n_to_copy=None):
+def add_aug_files(target_language, small_data_dir, n_to_copy=None, subdir='train'):
     aug_dir = Path(f'/home/paperspace/text-augmentation/imdb_{target_language}/')
-    selected_train = shuffle(list((small_data_dir / 'train/').glob('*/*.txt')))
+    selected_train = shuffle(list((small_data_dir / subdir/).glob('*/*.txt')))
     if n_to_copy is not None:
         selected_train = selected_train[:n_to_copy]
     assert aug_dir.exists()
