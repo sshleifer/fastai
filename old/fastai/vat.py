@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .core import no_grad_context, set_grad_enabled
 from .text import *
-SM = F.log_softmax
+SM = F.softmax
 
 @contextlib.contextmanager
 def _disable_tracking_bn_stats(model):
@@ -78,7 +78,8 @@ class VATLoss(nn.Module):
                     #logp_hat *= mask
 
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
-                    adv_distance = F.kl_div(logp_hat, original_logits,)  # EOS Weights?
+                    adv_distance = F.kl_div(logp_hat.log(), original_logits,)  # EOS Weights?
+                    # logits are different by\
                     import pdb; pdb.set_trace()
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     # the backpropagation algorithm should not be used to propagate
