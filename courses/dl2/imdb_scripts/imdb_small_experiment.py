@@ -56,7 +56,7 @@ def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
 
     baseline_metrics = run_experiment(target_language, orig_small_data_dir=reference_path,
                                       n_to_copy=0)
-    return {'es': es_metrics, 'baseline': baseline_metrics}
+    return {'btrans': es_metrics, 'baseline': baseline_metrics}
 
 
 def add_aug_files(target_language, small_data_dir, n_to_copy=None):
