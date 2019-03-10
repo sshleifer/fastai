@@ -72,7 +72,8 @@ class VATLoss(nn.Module):
                 for i in range(self.ip):
                     #attack.requires_grad_(True)
                     #attack = attack * self.xi
-                    print(f'attack.requires_grad: {attack.requires_grad}')
+
+                    assert attack.requires_grad
                     logp_hat = self.seq_rnn_emb2logits(model, embedded, attack)
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
@@ -80,20 +81,11 @@ class VATLoss(nn.Module):
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     # the backpropagation algorithm should not be used to propagate
                     # gradients through the adversarial example construction process.
-
                     attack_grad, = torch.autograd.grad(adv_distance, attack)
 
                     attack = attack_grad
-                    #adv_distance.backward() # does this change attack?
-                    #assert attack.grad is not None
-                    #assert not attack.volatile, 'attack volatile after grad setting'
-                    #attack = _l2_normalize(attack.grad)  # breaks cause grad is None
-                    # nans in attack?
                     model.zero_grad()
-                    #attack.data.grad.zero_()
 
-            # calc LDS
-            # attack.zero_grad()
 
             if attack.volatile:
                 attack = attack.detach()
