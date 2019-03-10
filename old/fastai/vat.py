@@ -77,6 +77,7 @@ class VATLoss(nn.Module):
                     logp_hat = self.seq_rnn_emb2logits(model, embedded, attack)
                     mask = torch.zeros_like(logp_hat)
                     mask[-1] = 1
+                    raise ValueError('mask shape: f{mask.shape}')
                     logp_hat *= mask
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, pred,)  # EOS Weights?
