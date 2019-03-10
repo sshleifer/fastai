@@ -57,7 +57,7 @@ def read_texts(path, classes=CLASSES):
             texts.append(fname.open('r', encoding='utf-8').read())
             labels.append(idx)
             fnames.append(fname)
-    return np.array(texts),np.array(labels),
+    return np.array(texts),np.array(labels), np.array(fnames)
 
 
 np.random.seed(42)
