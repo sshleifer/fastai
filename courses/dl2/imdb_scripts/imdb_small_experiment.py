@@ -21,6 +21,8 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
         dest_path = Path(f'/home/paperspace/imdb_{int(n_train/1000)}k_{int(n_test/1000)}k/')
         dest_path.mkdir(exist_ok=True)
         print(dest_path)
+    else:
+        shutil.rmtree(dest_path)
     copy_subset_of_files(src_path, dest_path, dirs=('train',), n=n_train)
     copy_subset_of_files(src_path, dest_path, dirs=('test',), n=n_test)
     return dest_path
@@ -30,25 +32,25 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
         orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
                    do_vat=False):
-    small_data_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
-    if small_data_dir.exists() and not second_lang:
-        shutil.rmtree(small_data_dir)
+    experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
+    if experiment_dir.exists() and not second_lang:
+        shutil.rmtree(experiment_dir)
     if not second_lang:
-        shutil.copytree(orig_small_data_dir, small_data_dir)
+        shutil.copytree(orig_small_data_dir, experiment_dir)
 
-    add_aug_files(target_language, small_data_dir, n_to_copy=n_to_copy)
-    prepare_tokens_and_labels(small_data_dir)
+    add_aug_files(target_language, experiment_dir, n_to_copy=n_to_copy)
+    prepare_tokens_and_labels(experiment_dir)
     # Finetune LM
-    train_lm(small_data_dir, WT103_PATH, early_stopping=True, cl=lm_cl)
+    train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=lm_cl)
     # Train Classifier
-    learn = train_clas(small_data_dir, 0, bs=64, cl=classif_cl,
+    learn = train_clas(experiment_dir, 0, bs=64, cl=classif_cl,
                        do_vat=do_vat)
     return learn.sched.rec_metrics
-    # eval_clas(small_data_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
+    # eval_clas(experiment_dir, val_dir=Path('/home/paperspace/baseline_data/tmp/'))  # CudaError
 
 import time
 def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None):
-    reference_path = make_small_ds(src_path, None, n)
+    reference_path = make_small_ds(src_path, None, n_train=n)
     start = time.time()
     es_metrics = run_experiment(
         'es', orig_small_data_dir=reference_path, lm_cl=10,
