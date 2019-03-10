@@ -76,8 +76,10 @@ class VATLoss(nn.Module):
                     #mask = torch.zeros_like(logp_hat)
                     #mask[-1] = 1
                     #logp_hat *= mask
+
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, original_logits,)  # EOS Weights?
+                    import pdb; pdb.set_trace()
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
                     # the backpropagation algorithm should not be used to propagate
                     # gradients through the adversarial example construction process.
