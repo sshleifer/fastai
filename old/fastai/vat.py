@@ -20,7 +20,7 @@ def _disable_tracking_bn_stats(model):
 def _l2_normalize(d):
     #d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
     nrm = torch.norm(d, p=2, dim=1) + 1e-8
-    return d.div(nrm.view(nrm.shape[0], 1).expand_as(d) + 1e-8)
+    return d.div(nrm.view(nrm.shape[0], 1, nrm.shape[1]).expand_as(d) + 1e-8)
 
 
 def require_nonleaf_grad(v):
