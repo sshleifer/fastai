@@ -34,7 +34,7 @@ def load_model(itos_filename, classifier_filename, num_classes):
     # put the classifier into evaluation mode
     model.reset()
     model.eval()
-
+    model = to_gpu(model)
     return stoi, model
 
 
@@ -89,7 +89,7 @@ def predict_text(stoi, model, text):
     tensor = to_gpu(torch.from_numpy(ary))
 
     # wrap in a torch Variable
-    variable = to_gpu(Variable(tensor))
+    variable = Variable(tensor)
 
     # do the predictions
     predictions = model(variable)
