@@ -51,15 +51,13 @@ class VATLoss(nn.Module):
         sl, bs = x.shape
         # 2) does adversarial_text use logits? Yes but they call sigmoid inside their KL helper
         original_logits, _, __ = model(x)
-        original_logits = original_logits.detach()
+        original_logits = F.softmax(original_logits.detach(), 1) # bs, nclass
 
-
-        # prepare random unit tensor
         rnn = model[0]
         #emb_shape = (bs, rnn.emb_size)
 
-        embedded = model[0].encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
-        embedded = model[0].dropouti(embedded).detach() # 3d [sl, bs, esize] (I think)
+        embedded = rnn.encoder_with_dropout(x, dropout=rnn.dropoute if model[0].training else 0)
+        embedded = rnn.dropouti(embedded).detach() # 3d [sl, bs, esize] (I think)
         attack = V_(to_gpu(torch.rand(embedded.shape).sub(0.5)), requires_grad=True, volatile=False)
         attack = _l2_normalize(attack)
         assert not attack.volatile, 'attack volatile before power iteration'
@@ -73,9 +71,10 @@ class VATLoss(nn.Module):
 
                     assert attack.requires_grad
                     logp_hat = self.seq_rnn_emb2logits(model, embedded, attack)
-                    mask = torch.zeros_like(logp_hat)
-                    mask[-1] = 1
-                    logp_hat *= mask
+                    # ISSUE: this is 2d, whereas in the paper they say should be 3d.
+                    #mask = torch.zeros_like(logp_hat)
+                    #mask[-1] = 1
+                    #logp_hat *= mask
                     assert not attack.volatile, 'attack volatile before adv_dist.backward()'
                     adv_distance = F.kl_div(logp_hat, original_logits,)  # EOS Weights?
                     assert not attack.volatile, 'attack volatile before adv_dist.backward(), after retain_grad'
@@ -98,8 +97,6 @@ class VATLoss(nn.Module):
 
     def seq_rnn_emb2logits(self, model, emb, attack):
         rnn_out: tuple = model[0].forward_from_embedding(emb + attack)
-        #print(f'rnn_out shape: {rnn_out.shape}')
-        #import pdb; pdb.set_trace()
         pred_hat, _, __ = model[1].forward(rnn_out)
-        return pred_hat
-        # return F.log_softmax(pred_hat, dim=1)
+        #return pred_hat # a 2d tensor
+        return F.log_softmax(pred_hat, dim=1)
