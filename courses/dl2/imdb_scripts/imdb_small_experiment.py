@@ -20,7 +20,7 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 
     if dest_path is None:
         dest_path = Path(f'/home/paperspace/imdb_{int(n_train/1000)}k_{int(n_test/1000)}k/')
-        if dest_path.exist(): shutil.rmtree(dest_path)
+        if dest_path.exists(): shutil.rmtree(dest_path)
         dest_path.mkdir(exist_ok=True)
         print(dest_path)
 
