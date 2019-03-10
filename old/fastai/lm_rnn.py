@@ -123,7 +123,7 @@ class RNN_Encoder(nn.Module):
                 to_gpu(self.weights.new(self.ndir, self.bs, nh).zero_()))
         else:
             return Variable(
-                to_gpu(self.weights.new(self.ndir, self.bs, nh).zero_(), volatile=not self.training))
+                to_gpu(self.weights.new(self.ndir, self.bs, nh).zero_()), volatile=not self.training)
 
     def reset(self):
         if self.qrnn: [r.reset() for r in self.rnns]
