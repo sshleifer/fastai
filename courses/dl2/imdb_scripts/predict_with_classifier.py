@@ -86,7 +86,7 @@ def predict_text(stoi, model, text):
     ary = np.reshape(np.array(encoded),(-1,1))
 
     # turn this array into a tensor
-    tensor = torch.from_numpy(ary)
+    tensor = to_gpu(torch.from_numpy(ary))
 
     # wrap in a torch Variable
     variable = Variable(tensor)
