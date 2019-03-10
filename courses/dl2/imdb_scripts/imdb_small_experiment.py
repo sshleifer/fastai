@@ -82,7 +82,7 @@ def add_aug_files(target_language, small_data_dir, n_to_copy=None, subdir='train
             shutil.copy(p2, dest_path)
 
 
-def prepare_tokens_and_labels(small_data_dir):
+def prepare_tokens_and_labels(small_data_dir, max_vocab=60000):
     train_csv_path = small_data_dir/'train.csv'
     make_csv_from_dir(small_data_dir/'train', train_csv_path)
     trdf = pd.read_csv(small_data_dir/'train.csv', header=None)
@@ -90,7 +90,7 @@ def prepare_tokens_and_labels(small_data_dir):
     # Copy small val data
     make_csv_from_dir(small_data_dir/'test', small_data_dir/'val.csv')
     create_toks(small_data_dir)
-    tok2id(small_data_dir, max_vocab=60000)  # usually don't use this much
+    tok2id(small_data_dir, max_vocab=max_vocab)  # usually don't use this much
 
 
 

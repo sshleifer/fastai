@@ -51,12 +51,13 @@ def copy_subset_of_files(src_path: Path, dest_path, n=500,
 
 CLASSES = ['neg', 'pos', 'unsup']
 def read_texts(path, classes=CLASSES):
-    texts,labels = [],[]
+    texts,labels,fnames = [],[],[]
     for idx,label in enumerate(classes):
         for fname in (path/label).glob('*.*'):
             texts.append(fname.open('r', encoding='utf-8').read())
             labels.append(idx)
-    return np.array(texts),np.array(labels)
+            fnames.append(fname)
+    return np.array(texts),np.array(labels),
 
 
 np.random.seed(42)
@@ -68,7 +69,7 @@ def make_csv_from_dir(imdb_dir, dest_path):
     """
     Args:
         imdb_dir like imdb/train"""
-    trn_texts, trn_labels = read_texts(imdb_dir)
+    trn_texts, trn_labels, fnames = read_texts(imdb_dir)
     df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_labels},
                  columns=['labels','text']).sample(frac=1.)
     df_trn[df_trn['labels'] != 2].to_csv(dest_path, header=False, index=False)
