@@ -1,5 +1,5 @@
 from fastai.text import *
-
+from .make_tta_df import make_tta_df, analyze_tta_df
 import fire
 
 
@@ -36,6 +36,29 @@ def load_model(itos_filename, classifier_filename, num_classes):
     model.eval()
     model = to_gpu(model)
     return stoi, model
+
+def get_preds_for_df_tta(model, stoi, all_txt):
+    """all_txt: like df_tta.text.values"""
+    texts = ['xbos xfld 1 ' + text for text in all_txt]
+    # predictions are done on arrays of input.
+    # We only have a single input, so turn it into a 1x1 array
+
+    # tokenize using the fastai wrapper around spacy
+    tok = Tokenizer().proc_all_mp(partition_by_cores(texts))
+    encoded = [[stoi[p] for p in txt] for txt in tok]
+    preds = [predict_encoded(model, e) for e in encoded]
+    yhat = np.array(preds).squeeze()[:, 1]
+    return yhat
+
+
+def run_tta_experiment(trained_classifier_filename, itos_filename, dir_path, num_classes=2):
+    tta_df = make_tta_df(dir_path)
+    stoi, model = load_model(itos_filename, trained_classifier_filename, num_classes)
+    tta_df['yhat'] = get_preds_for_df_tta()
+    err_table, tta_df = analyze_tta_df(tta_df)
+    #df_tta.to_msgpack(dir_path/'tta_res.mp')
+    return err_table, tta_df
+
 
 
 def softmax(x):
@@ -82,33 +105,20 @@ def predict_text(stoi, model, texts):
 
     # we want a [x,1] array where x is the number
     #  of words inputted (including the prefix tokens)
-    ary = np.reshape(np.array(encoded),(-1,1))
+    return predict_encoded(model, encoded)
 
+
+def predict_encoded(model, encoded):
+    ary = np.reshape(np.array(encoded), (-1, 1))
     # turn this array into a tensor
     tensor = to_gpu(torch.from_numpy(ary))
-
     # wrap in a torch Variable
     variable = Variable(tensor)
-
     # do the predictions
     predictions, _, _ = model(variable)
-
     # convert back to numpy
     numpy_preds = predictions.cpu().data.numpy()
-    print(f'np shape: {numpy_preds.shape}')
     return softmax(numpy_preds)
-
-
-def predict_tta(tta_ds, itos_filename, trained_classifier_filename, num_classes=2):
-    stoi, model = load_model(itos_filename, trained_classifier_filename, num_classes)
-    scores = []
-    for row in tta_ds:
-        row_scores = []
-        for text in row:
-            scores = predict_text(stoi, model, text)
-            row_scores.append(scores)
-        scores.append(row_scores)
-    return scores
 
 
 
