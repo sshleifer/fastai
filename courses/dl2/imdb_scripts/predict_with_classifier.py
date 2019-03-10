@@ -92,10 +92,10 @@ def predict_text(stoi, model, text):
     variable = Variable(tensor)
 
     # do the predictions
-    predictions = model(variable)
+    predictions, _, _ = model(variable)
 
     # convert back to numpy
-    numpy_preds = predictions[0].data.numpy()
+    numpy_preds = predictions.cpu().data.numpy()
 
     return softmax(numpy_preds[0])[0]
 
