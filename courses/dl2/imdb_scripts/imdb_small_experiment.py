@@ -54,9 +54,11 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
 import time
 
 
-def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None, eval_tta=False,
-                     do_baseline=True):
-    reference_path = make_small_ds(src_path, None, n_train=n)
+
+
+def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=None, eval_tta=False,
+                     do_baseline=True, tta_langs=('et',)):
+    reference_path = make_small_ds(src_path, None, n_train=n_train)
     experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     results = {}
     start = time.time()
@@ -67,6 +69,8 @@ def run_n_experiment(src_path, target_language='es', n=2000, n_to_copy=None, eva
     estime = time.time() - start
     results.update({'btrans': es_metrics, 'btrans_time': estime})
     if eval_tta:
+        for tta_lang in tta_langs:
+            add_aug_files(tta_lang, experiment_dir, subdir='test')
         start = time.time()
         err_tab, tta_df = run_tta_experiment(experiment_dir / 'tmp' / 'itos.pkl',
                                              experiment_dir / 'models' / 'clas_1.h5',

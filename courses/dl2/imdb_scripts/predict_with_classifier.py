@@ -51,6 +51,7 @@ def get_preds_for_df_tta(model, stoi, all_txt):
     return yhat
 
 
+
 def run_tta_experiment(trained_classifier_filename, itos_filename, dir_path, num_classes=2):
     tta_df = make_tta_df(dir_path)
     stoi, model = load_model(itos_filename, trained_classifier_filename, num_classes)

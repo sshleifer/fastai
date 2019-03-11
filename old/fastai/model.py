@@ -66,10 +66,12 @@ class Stepper():
         if self.loss_scale != 1: assert(self.fp16); loss = loss*self.loss_scale
         if self.reg_fn: loss = self.reg_fn(output, xtra, raw_loss)
         if self.do_vat:
+
             vat_loss = VATLoss().forward(self.m, *xs)
+            loss = loss + (10 * vat_loss)
             # print(f'loss:{loss}, vat_loss: {vat_loss}')
             self.m.vat_loss_logs[epoch].append((loss.cpu().data, vat_loss.cpu().data))
-            loss = loss + (10 * vat_loss)
+
         loss.backward()
         if self.fp16: update_fp32_grads(self.fp32_params, self.m)
         if self.loss_scale != 1:
