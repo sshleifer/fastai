@@ -71,12 +71,11 @@ def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=Non
         for tta_lang in tta_langs:
             add_aug_files(tta_lang, experiment_dir, subdir='test')
         start = time.time()
-        err_tab, tta_df = run_tta_experiment(
-                                             experiment_dir / 'models' / 'fwd_clas_1.h5',
+        err_tab, tta_df = run_tta_experiment(experiment_dir / 'models' / 'fwd_clas_1.h5',
                                              experiment_dir / 'tmp' / 'itos.pkl',
                                              experiment_dir)
 
-        results.update({'tta_err_tab': err_tab, 'tta_df': tta_df, 'tta_time': time.time() - start})
+        results.update({'tta_err_tab': err_tab, 'tta_df': tta_df.drop('fnames', 1), 'tta_time': time.time() - start})
     if not do_baseline:
         return results
 
