@@ -68,7 +68,7 @@ class Stepper():
         if self.do_vat:
             vat_loss = VATLoss().forward(self.m, *xs)
             # print(f'loss:{loss}, vat_loss: {vat_loss}')
-            self.m.vat_loss_logs[epoch].append((loss, vat_loss))
+            self.m.vat_loss_logs[epoch].append((loss.cpu().data, vat_loss.cpu().data))
             loss = loss + vat_loss
         loss.backward()
         if self.fp16: update_fp32_grads(self.fp32_params, self.m)
