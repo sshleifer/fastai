@@ -46,7 +46,7 @@ def get_preds_for_df_tta(model, stoi, all_txt):
     # tokenize using the fastai wrapper around spacy
     tok = Tokenizer().proc_all_mp(partition_by_cores(texts))
     encoded = [[stoi[p] for p in txt] for txt in tok]
-    preds = [predict_encoded(model, e) for e in encoded]
+    preds = [predict_encoded(model, e) for e in tqdm(encoded)]
     yhat = np.array(preds).squeeze()[:, 1]
     return yhat
 
