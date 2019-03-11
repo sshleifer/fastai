@@ -3,8 +3,8 @@ from fastai.text import *
 from fastai.lm_rnn import *
 from sklearn.metrics import confusion_matrix
 
-def eval_clas(model_dir_path, val_dir=None, cuda_id=0, lm_id='', clas_id=None, bs=64, backwards=False,
-              save_hard=False,
+def eval_clas(model_dir_path, final_clas_file=None, lm_file=None, val_dir=None, cuda_id=0,
+              lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
               bpe=False):
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
           f'clas_id {clas_id}; bs {bs}; backwards {backwards}; bpe {bpe}')
@@ -20,8 +20,10 @@ def eval_clas(model_dir_path, val_dir=None, cuda_id=0, lm_id='', clas_id=None, b
     lm_id = lm_id if lm_id == '' else f'{lm_id}_'
     clas_id = lm_id if clas_id is None else clas_id
     clas_id = clas_id if clas_id == '' else f'{clas_id}_'
-    final_clas_file = f'{PRE}{clas_id}clas_1'
-    lm_file = f'{PRE}{lm_id}lm_enc'
+    if final_clas_file is None:
+        final_clas_file = f'{PRE}{clas_id}clas_1'
+    if lm_file is None:
+        lm_file = f'{PRE}{lm_id}lm_enc'
     lm_path = model_dir_path / 'models' / f'{lm_file}.h5'
     assert lm_path.exists(), f'Error: {lm_path} does not exist.'
     if val_dir is None:
