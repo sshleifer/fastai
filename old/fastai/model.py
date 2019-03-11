@@ -51,7 +51,8 @@ class Stepper():
     def _setup_vat_logging(self, model, epoch):
         if not hasattr(model, 'vat_loss_logs'):
             model.vat_loss_logs = {}
-        model.vat_loss_logs[epoch] = []
+        if epoch not in model.vat_loss_logs:
+            model.vat_loss_logs[epoch] = []
 
     def step(self, xs, y, epoch):
         self._setup_vat_logging(self.m, epoch)
