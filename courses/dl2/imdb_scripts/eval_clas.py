@@ -3,7 +3,8 @@ from fastai.text import *
 from fastai.lm_rnn import *
 from sklearn.metrics import confusion_matrix
 
-def eval_clas(model_dir_path, final_clas_file=None, lm_file=None, val_dir=None, cuda_id=0,
+def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
+              lm_file=None, val_dir=None, cuda_id=0,
               lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
               bpe=False):
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
@@ -57,7 +58,8 @@ def eval_clas(model_dir_path, final_clas_file=None, lm_file=None, val_dir=None, 
     m = get_rnn_classifier(bptt, 20*70, c, vs, emb_sz=em_sz, n_hid=nh, n_layers=nl, pad_token=1,
                 layers=[em_sz*3, 50, c], drops=[0., 0.])
     learn = RNN_Learner(md, TextModel(to_gpu(m)))
-    learn.load_encoder(lm_file)
+    if load_encoder:
+        learn.load_encoder(lm_file)
     learn.load(final_clas_file)
     preds = learn.predict()
     if save_hard:
