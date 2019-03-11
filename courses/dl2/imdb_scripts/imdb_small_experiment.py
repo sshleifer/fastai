@@ -62,7 +62,7 @@ def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=Non
     results = {}
     start = time.time()
     es_metrics = run_experiment(
-        'es', orig_small_data_dir=reference_path, lm_cl=10,
+        target_language, orig_small_data_dir=reference_path, lm_cl=10,
         n_to_copy=n_to_copy,
     )
     estime = time.time() - start
