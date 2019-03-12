@@ -6,9 +6,7 @@ import time
 def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
               lm_file=None, val_dir=None, cuda_id=0,
               lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
-              use_sampler=True,
-              save_path='preds.npy',
-              bpe=False):
+              use_sampler=True, n_val=None, save_path='preds.npy', bpe=False):
     start= time.time()
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
           f'clas_id {clas_id}; bs {bs}; backwards {backwards}; bpe {bpe}')
@@ -40,10 +38,17 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
         val_sent = np.load(val_dir / f'val_{IDS}_bwd.npy')
     else:
         val_sent = np.load(val_dir / f'val_{IDS}.npy')
+
+
     val_lbls = np.load(val_dir / 'lbl_val.npy').flatten()
     val_lbls = val_lbls.flatten()
+
     val_lbls -= val_lbls.min()
     c=int(val_lbls.max())+1
+
+    if n_val is not None:  # filter to first n_val
+        val_lbls = val_lbls[:n_val]
+        val_sent = val_sent[:n_val]
 
     val_ds = TextDataset(val_sent, val_lbls)
     if use_sampler:
@@ -58,8 +63,7 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
     md = ModelData(model_dir_path, None, val_dl)
 
     if bpe: vs=30002
-    else:
-        # Use the model's itos
+    else: # Use the model's itos
         itos = pickle.load(open(model_dir_path / 'tmp' / 'itos.pkl', 'rb'))
         vs = len(itos)
 
@@ -70,10 +74,8 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
         learn.load_encoder(lm_file)
     learn.load(final_clas_file)
     preds = learn.predict()
-    if save_hard:
-        pass
-        #for x,y in val_dl:
 
+    # Calc Accuracy
     predictions = np.argmax(preds, axis=1)
     acc = (val_lbls_sampled == predictions).mean()
 
