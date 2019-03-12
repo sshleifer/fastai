@@ -125,7 +125,7 @@ class SortSampler(Sampler):
 
     def unsort(self, iterable):
         new_iterable = np.zeros_like(iterable)
-        for old, new in self.indices:
+        for old, new in self.old_idx_to_new_idx:
             new_iterable[old] = iterable[new]
         return new_iterable
 
