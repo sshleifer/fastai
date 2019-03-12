@@ -2,7 +2,7 @@ import fire
 from fastai.text import *
 from fastai.lm_rnn import *
 
-from .finetune_lm import EarlyStopping
+from imdb_scripts.finetune_lm import EarlyStopping
 import time
 
 def freeze_all_but(learner, n):
