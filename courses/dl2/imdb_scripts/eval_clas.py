@@ -29,7 +29,8 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
     if lm_file is None:
         lm_file = f'{PRE}{lm_id}lm_enc'
     lm_path = model_dir_path / 'models' / f'{lm_file}.h5'
-    assert lm_path.exists(), f'Error: {lm_path} does not exist.'
+    if load_encoder:
+        assert lm_path.exists(), f'Error: {lm_path} does not exist.'
     if val_dir is None:
         val_dir = model_dir_path / 'tmp'
 
