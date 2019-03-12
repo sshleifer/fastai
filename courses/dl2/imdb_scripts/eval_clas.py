@@ -6,6 +6,7 @@ from sklearn.metrics import confusion_matrix
 def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
               lm_file=None, val_dir=None, cuda_id=0,
               lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
+              use_sampler=True,
               save_path='preds.npy',
               bpe=False):
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
@@ -43,8 +44,12 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
     c=int(val_lbls.max())+1
 
     val_ds = TextDataset(val_sent, val_lbls)
-    val_samp = SortSampler(val_sent, key=lambda x: len(val_sent[x]))
-    val_lbls_sampled = val_lbls[list(val_samp)]
+    if use_sampler:
+        val_samp = SortSampler(val_sent, key=lambda x: len(val_sent[x]))
+        val_lbls_sampled = val_lbls[list(val_samp)]
+    else:
+        val_samp = None
+        val_lbls_sampled = val_lbls
 
     val_dl = DataLoader(val_ds, bs, transpose=True, num_workers=1, pad_idx=1, sampler=val_samp)
     # maybe if we change this first arg to val_dir we will have fewer issues.
@@ -76,6 +81,8 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
     if save_path is not None:
         pred_save_path = model_dir_path / 'tmp' / save_path
         np.save(pred_save_path, preds)
+        np.save(model_dir_path/ 'tmp' / 'eval_labels.npy', val_lbls_sampled)
+
 
 if __name__ == '__main__': fire.Fire(eval_clas)
 
