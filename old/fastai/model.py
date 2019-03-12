@@ -290,8 +290,7 @@ def predict_with_targs_(m, dl):
     m.eval()
     if hasattr(m, 'reset'): m.reset()
     res = []
-    print('iterating')
-    for *x,y in iter(dl):
+    for *x,y in tqdm(iter(dl)):
         res.append([get_prediction(to_np(m(*VV(x)))),to_np(y.long())])
     return zip(*res)
 
