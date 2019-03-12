@@ -26,6 +26,7 @@ class EarlyStopping(Callback):
         if self.num_epochs_no_improvement > self.patience:
             print(f'Stopping - no improvement after {self.patience+1} epochs')
             return True
+
     def on_train_end(self):
         print(f'Loading best model from {self.save_path}')
         self.learner.load(self.save_path)
