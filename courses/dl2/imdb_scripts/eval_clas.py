@@ -6,6 +6,7 @@ from sklearn.metrics import confusion_matrix
 def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
               lm_file=None, val_dir=None, cuda_id=0,
               lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
+              save_path='preds.npy',
               bpe=False):
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
           f'clas_id {clas_id}; bs {bs}; backwards {backwards}; bpe {bpe}')
@@ -72,8 +73,9 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
     acc = (val_lbls_sampled == predictions).mean()
     print('Accuracy =', acc, 'Confusion Matrix =')
     print(confusion_matrix(val_lbls_sampled, predictions))
-    pred_save_path = model_dir_path / 'tmp' / 'preds.npy's
-    np.save(pred_save_path, preds)
+    if save_path is not None:
+        pred_save_path = model_dir_path / 'tmp' / save_path
+        np.save(pred_save_path, preds)
 
 if __name__ == '__main__': fire.Fire(eval_clas)
 
