@@ -2,13 +2,14 @@ import fire
 from fastai.text import *
 from fastai.lm_rnn import *
 from sklearn.metrics import confusion_matrix
-
+import time
 def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
               lm_file=None, val_dir=None, cuda_id=0,
               lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
               use_sampler=True,
               save_path='preds.npy',
               bpe=False):
+    start= time.time()
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
           f'clas_id {clas_id}; bs {bs}; backwards {backwards}; bpe {bpe}')
     if not hasattr(torch._C, '_cuda_setDevice'):
@@ -82,7 +83,7 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
         pred_save_path = model_dir_path / 'tmp' / save_path
         np.save(pred_save_path, preds)
         np.save(model_dir_path/ 'tmp' / 'eval_labels.npy', val_lbls_sampled)
-
+    print(f'Time: {time.time()- start}')
 
 if __name__ == '__main__': fire.Fire(eval_clas)
 
