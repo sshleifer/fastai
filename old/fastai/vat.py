@@ -23,12 +23,6 @@ def _l2_normalize(d):
     nrm = torch.norm(d, p=2, dim=1) + 1e-8
     return d.div(nrm.view(nrm.shape[0], 1, nrm.shape[1]).expand_as(d))
 
-def require_nonleaf_grad(v):
-    """Unused"""
-    def hook(g):
-        v.grad_nonleaf = g
-
-    v.register_hook(hook)
 
 class VATLoss(nn.Module):
     def __init__(self, xi=10.0, eps=1.0, ip=1):
