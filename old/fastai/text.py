@@ -125,9 +125,8 @@ class SortSampler(Sampler):
 
     def unsort(self, iterable):
         new_iterable = np.zeros_like(iterable)
-        import pdb; pdb.set_trace()
-        for old, new in self.old_idx_to_new_idx:
-            new_iterable[old] = iterable[new]
+        for sorted_idx, orig_dix in self.old_idx_to_new_idx:
+            new_iterable[orig_dix] = iterable[sorted_idx]
         return new_iterable
 
     def __len__(self) -> int: return len(self.data_source)
