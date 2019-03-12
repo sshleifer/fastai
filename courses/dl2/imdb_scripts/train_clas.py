@@ -1,6 +1,8 @@
 import fire
 from fastai.text import *
 from fastai.lm_rnn import *
+
+from .finetune_lm import EarlyStopping
 import time
 
 def freeze_all_but(learner, n):
@@ -87,6 +89,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     learn.clip = 25
     learn.metrics = [accuracy]
 
+
     lrm = 2.6
     if use_discriminative:
         lrs = np.array([lr/(lrm**4), lr/(lrm**3), lr/(lrm**2), lr/lrm, lr])
@@ -144,9 +147,12 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     else:
         n_cycles = 1
 
-    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=do_vat)
+    time_str = time.strftime('%m-%d_%H:%M:%S')
+    save_path = f'es_from_{time_str}'
+    es = EarlyStopping(learn, save_path, patience=100)
 
-
+    learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=do_vat,
+              callbacks=[es])
     learn.save(final_clas_file)
     return learn
 
