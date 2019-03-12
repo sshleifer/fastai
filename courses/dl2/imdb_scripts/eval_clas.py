@@ -67,9 +67,13 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
         #for x,y in val_dl:
 
     predictions = np.argmax(preds, axis=1)
+
+
     acc = (val_lbls_sampled == predictions).mean()
     print('Accuracy =', acc, 'Confusion Matrix =')
     print(confusion_matrix(val_lbls_sampled, predictions))
+    pred_save_path = model_dir_path / 'tmp' / 'preds.npy's
+    np.save(pred_save_path, preds)
 
 if __name__ == '__main__': fire.Fire(eval_clas)
 
