@@ -74,15 +74,24 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
         #for x,y in val_dl:
 
     predictions = np.argmax(preds, axis=1)
-
-
     acc = (val_lbls_sampled == predictions).mean()
+
+
     print('Accuracy =', acc, 'Confusion Matrix =')
     print(confusion_matrix(val_lbls_sampled, predictions))
+
+    ### Test- Compare Unsorted
+    unsorted_preds = val_samp.unsort(preds)
+    unsorted_class_preds = np.argmax(unsorted_preds, 1)
+    unsorted_acc = (val_lbls == unsorted_class_preds).mean()
+    print('Accuracy =', unsorted_acc, 'Confusion Matrix =')
+    print(confusion_matrix(val_lbls, unsorted_class_preds))
+
     if save_path is not None:
         pred_save_path = model_dir_path / 'tmp' / save_path
-        np.save(pred_save_path, preds)
-        np.save(model_dir_path/ 'tmp' / 'eval_labels.npy', val_lbls_sampled)
+        np.save(pred_save_path, unsorted_preds)
+        np.save(model_dir_path/ 'tmp' / 'eval_labels.npy', val_lbls)
+
     print(f'Time: {time.time()- start}')
 
 if __name__ == '__main__': fire.Fire(eval_clas)

@@ -116,6 +116,25 @@ class TextDataset(Dataset):
 
 
 class SortSampler(Sampler):
+    "Go through the text data by order of length."
+
+    def __init__(self, data_source, key):
+        self.data_source,self.key = data_source,key
+        self.indices = sorted(range(len(self.data_source)), key=self.key, reverse=True)
+        self.old_idx_to_new_idx = enumerate(self.indices)
+
+    def unsort(self, iterable):
+        new_iterable = np.zeros_like(iterable)
+        for old, new in self.indices:
+            new_iterable[old] = iterable[new]
+        return new_iterable
+
+    def __len__(self) -> int: return len(self.data_source)
+    def __iter__(self):
+        return iter(self.indices)
+
+
+class SortSampler(Sampler):
     def __init__(self, data_source, key): self.data_source,self.key = data_source,key
     def __len__(self): return len(self.data_source)
     def __iter__(self):
