@@ -71,7 +71,7 @@ class VATLoss(nn.Module):
                     #attack = attack * self.xi
 
                     assert attack.requires_grad
-                    logp_hat = self.seq_rnn_emb2logits(model, embedded, attack)
+                    logp_hat = self.seq_rnn_emb2logits(model, embedded, attack* self.xi)
                     # ISSUE: this is 2d, whereas in the paper they say should be 3d.
                     #mask = torch.zeros_like(logp_hat)
                     #mask[-1] = 1
