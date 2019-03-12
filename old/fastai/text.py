@@ -134,13 +134,6 @@ class SortSampler(Sampler):
         return iter(self.indices)
 
 
-class SortSampler(Sampler):
-    def __init__(self, data_source, key): self.data_source,self.key = data_source,key
-    def __len__(self): return len(self.data_source)
-    def __iter__(self):
-        return iter(sorted(range(len(self.data_source)), key=self.key, reverse=True))
-
-
 class SortishSampler(Sampler):
     """Returns an iterator that traverses the the data in randomly ordered batches that are approximately the same size.
     The max key size batch is always returned in the first call because of pytorch cuda memory allocation sequencing.
