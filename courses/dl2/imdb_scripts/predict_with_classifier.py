@@ -102,7 +102,7 @@ def predict_text(stoi, model, texts):
     tok = Tokenizer().proc_all_mp(partition_by_cores(texts))
 
     # turn into integers for each word
-    encoded = [stoi[p] for p in tok[0]]
+    encoded = [[stoi[p] for p in t] for t in tok]
 
     # we want a [x,1] array where x is the number
     #  of words inputted (including the prefix tokens)

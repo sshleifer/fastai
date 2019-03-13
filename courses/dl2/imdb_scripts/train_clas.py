@@ -27,7 +27,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     PRE = 'bwd_' if backwards else 'fwd_'
     PRE = 'bpe_' + PRE if bpe else PRE
     IDS = 'bpe' if bpe else 'ids'
-    train_file_id = train_file_id if train_file_id == '' else f'_{train_file_id}'
+    train_file_id = trfain_file_id if train_file_id == '' else f'_{train_file_id}'
     dir_path = Path(dir_path)
     lm_id = lm_id if lm_id == '' else f'{lm_id}_'
     clas_id = lm_id if clas_id is None else clas_id
@@ -148,7 +148,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
         n_cycles = 1
 
     time_str = time.strftime('%m-%d_%H:%M:%S')
-    save_path = f'es_from_{time_str}'
+    save_path = f'{PRE}_es_from_{time_str}'
     es = EarlyStopping(learn, save_path, patience=100)
 
     learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=do_vat,
