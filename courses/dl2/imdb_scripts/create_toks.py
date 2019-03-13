@@ -65,15 +65,21 @@ def shuffle(lst1, lst2):
     trn_idx = np.random.permutation(len(lst1))
     return lst1[trn_idx], lst2[trn_idx]
 
-def make_csv_from_dir(imdb_dir, dest_path):
+def make_csv_from_dir(imdb_dir, dest_path, crosswalk_path=None):
     """
     Args:
         imdb_dir like imdb/train"""
     trn_texts, trn_labels, fnames = read_texts(imdb_dir)
     df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_labels},
-                 columns=['labels','text']).sample(frac=1.)
+                 columns=['labels','text'])
     df_trn[df_trn['labels'] != 2].to_csv(dest_path, header=False, index=False)
     print(f'saved {df_trn.shape[0]} rows to {dest_path}')
+
+    if crosswalk_path is not None:
+        trn_texts, trn_labels, fnames = read_texts(imdb_dir)
+        df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_labels, 'fname': fnames})
+        df_trn[df_trn['labels'] != 2].to_msgpack(crosswalk_path)
+
 
 
 def fixup(x):
