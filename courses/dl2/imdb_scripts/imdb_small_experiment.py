@@ -103,8 +103,8 @@ def add_aug_files(target_language, small_data_dir, n_to_copy=None, subdir='train
 
 def make_val_csv(small_data_dir, crosswalk_path=None):
     val_csv_path = small_data_dir/'val.csv'
-    make_csv_from_dir(small_data_dir/'test', val_csv_path,
-                      crosswalk_path=crosswalk_path)
+    make_csv_from_dir(small_data_dir /'test', val_csv_path,
+                      crosswalk_file=crosswalk_path)
 
 def make_train_csv(small_data_dir):
     val_csv_path = small_data_dir/'train.csv'
