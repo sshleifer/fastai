@@ -105,6 +105,9 @@ def make_val_csv(small_data_dir):
     val_csv_path = small_data_dir/'val.csv'
     make_csv_from_dir(small_data_dir/'test', val_csv_path)
 
+def make_train_csv(small_data_dir):
+    val_csv_path = small_data_dir/'train.csv'
+    make_csv_from_dir(small_data_dir/'train', val_csv_path)
 
 def prepare_tokens_and_labels(small_data_dir, max_vocab=60000):
     train_csv_path = small_data_dir/'train.csv'
