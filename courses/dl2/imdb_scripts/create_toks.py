@@ -78,6 +78,7 @@ def make_csv_from_dir(imdb_dir, dest_path, crosswalk_file=None):
     if crosswalk_file is not None:
         trn_texts, trn_labels, fnames = read_texts(imdb_dir)
         df_trn = pd.DataFrame({'text': trn_texts, 'labels': trn_labels, 'fname': fnames})
+        df_trn['fname'] = df_trn['fname'].astype(str)
         df_trn[df_trn['labels'] != 2].to_msgpack(dest_path.parent / crosswalk_file)
 
 
