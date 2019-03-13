@@ -25,7 +25,7 @@ def tok2id(dir_path, max_vocab=30000, min_freq=1, itos_path=None):
         itos.insert(0, '_pad_')
         itos.insert(0, '_unk_')
     else:
-        itos = pickle.load(itos_path.open('rb'))
+        itos = pickle.load(Path(itos_path).open('rb'))
     stoi = collections.defaultdict(lambda:0, {v:k for k,v in enumerate(itos)})
     print(len(itos))
 
