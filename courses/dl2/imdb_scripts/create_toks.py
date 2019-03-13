@@ -108,7 +108,7 @@ def get_all(df, n_lbls, lang='en'):
     return tok, labels
 
 
-def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en', backwards=False):
+def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en', just_val=False):
     print(f'dir_path {dir_path} chunksize {chunksize} n_lbls {n_lbls} lang {lang}')
     try:
         spacy.load(lang)
@@ -125,13 +125,18 @@ def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en', backwards=False)
 
     tmp_path = dir_path / 'tmp'
     tmp_path.mkdir(exist_ok=True)
-    tok_trn, trn_labels = get_all(df_trn, n_lbls, lang=lang)
-    tok_val, val_labels = get_all(df_val, n_lbls, lang=lang)
 
-    np.save(tmp_path / 'tok_trn.npy', tok_trn)
+
+
+    tok_val, val_labels = get_all(df_val, n_lbls, lang=lang)
     np.save(tmp_path / 'tok_val.npy', tok_val)
-    np.save(tmp_path / 'lbl_trn.npy', trn_labels)
     np.save(tmp_path / 'lbl_val.npy', val_labels)
+
+    if just_val:
+        return
+    tok_trn, trn_labels = get_all(df_trn, n_lbls, lang=lang)
+    np.save(tmp_path / 'tok_trn.npy', tok_trn)
+    np.save(tmp_path / 'lbl_trn.npy', trn_labels)
 
     trn_joined = [' '.join(o) for o in tok_trn]
     open(tmp_path / 'joined.txt', 'w', encoding='utf-8').writelines(trn_joined)
