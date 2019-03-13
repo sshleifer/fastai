@@ -181,7 +181,7 @@ class LinearBlock(nn.Module):
 
     def forward(self, x): return self.lin(self.drop(self.bn(x)))
 
-def min_pool(x, shape): -F.adaptive_max_pool1d(-x, shape)
+def min_pool(x, shape): return -F.adaptive_max_pool1d(-x, shape)
 
 
 
