@@ -209,7 +209,6 @@ class PoolingLinearClassifier(nn.Module):
         avgpool = self.pool(output, bs, 'avg')
         mxpool = self.pool(output, bs, 'max')
         mnpool = self.pool(output,bs, 'min')
-        print('HERE')
         x = torch.cat([output[-1], mxpool, avgpool, mnpool], 1)
         for l in self.layers:
             l_x = l(x)
