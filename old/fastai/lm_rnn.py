@@ -181,6 +181,9 @@ class LinearBlock(nn.Module):
 
     def forward(self, x): return self.lin(self.drop(self.bn(x)))
 
+def min_pool(x): -F.adaptive_max_pool1d(-x)
+
+
 
 class PoolingLinearClassifier(nn.Module):
     def __init__(self, layers, drops):
@@ -188,17 +191,25 @@ class PoolingLinearClassifier(nn.Module):
         self.layers = nn.ModuleList([
             LinearBlock(layers[i], layers[i + 1], drops[i]) for i in range(len(layers) - 1)])
 
-    def pool(self, x, bs, is_max):
-        f = F.adaptive_max_pool1d if is_max else F.adaptive_avg_pool1d
+    def pool(self, x, bs, pool_fn_name):
+        #f = F.adaptive_max_pool1d if pool_fn_name else F.adaptive_avg_pool1d
+        pool_fns = {
+            'max': F.adaptive_max_pool1d,
+            'min': min_pool,
+            'avg': F.adaptive_avg_pool1d,
+        }
+        f = pool_fns[pool_fn_name]
+
         return f(x.permute(1,2,0), (1,)).view(bs,-1)
 
     def forward(self, input):
         raw_outputs, outputs = input
         output = outputs[-1]
         sl,bs,_ = output.size()
-        avgpool = self.pool(output, bs, False)
-        mxpool = self.pool(output, bs, True)
-        x = torch.cat([output[-1], mxpool, avgpool], 1)
+        avgpool = self.pool(output, bs, 'avg')
+        mxpool = self.pool(output, bs, 'max')
+        mnpool = self.pool(output,bs, 'min')
+        x = torch.cat([output[-1], mxpool, avgpool, mnpool], 1)
         for l in self.layers:
             l_x = l(x)
             x = F.relu(l_x)

@@ -133,8 +133,6 @@ def create_toks(dir_path, chunksize=24000, n_lbls=1, lang='en', just_val=False):
     tmp_path = dir_path / 'tmp'
     tmp_path.mkdir(exist_ok=True)
 
-
-
     tok_val, val_labels = get_all(df_val, n_lbls, lang=lang)
     np.save(tmp_path / 'tok_val.npy', tok_val)
     np.save(tmp_path / 'lbl_val.npy', val_labels)
