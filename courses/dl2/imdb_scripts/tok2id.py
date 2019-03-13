@@ -27,7 +27,7 @@ def tok2id(dir_path, max_vocab=30000, min_freq=1, itos_path=None):
     else:
         itos = pickle.load(Path(itos_path).open('rb'))
     stoi = collections.defaultdict(lambda:0, {v:k for k,v in enumerate(itos)})
-    print(len(itos))
+    print(f'VOCAB SIZE: {len(itos)}')
 
 
     trn_lm = np.array([[stoi[o] for o in p] for p in trn_tok])
