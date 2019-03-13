@@ -185,6 +185,30 @@ def min_pool(x, shape): return -F.adaptive_max_pool1d(-x, shape)
 
 
 
+
+import torch
+from torch import nn
+import torch.functional as F
+
+class Highway(nn.Module):
+
+    def __init__(self, e_word):
+        super().__init__()
+        self.proj = nn.Linear(e_word, e_word, bias=True)
+        self.gate = nn.Linear(e_word, e_word, bias=True)
+        self.dropout = nn.Dropout(.5)
+        self.sigmoid = torch.nn.Sigmoid()
+
+    def forward(self, xconv_out):
+        """Excpects inputs like (batch_size, e_word), outputs of same shape"""
+        xproj = nn.ReLU()(self.proj(xconv_out))
+        xgate = self.sigmoid(self.gate(xconv_out))
+        xhighway = (xgate * xproj) + ((1 - xgate) * xconv_out)
+        xword_emb = self.dropout(xhighway)
+        return xword_emb
+
+
+
 class PoolingLinearClassifier(nn.Module):
     def __init__(self, layers, drops):
         super().__init__()
@@ -208,13 +232,35 @@ class PoolingLinearClassifier(nn.Module):
         sl,bs,_ = output.size()
         avgpool = self.pool(output, bs, 'avg')
         mxpool = self.pool(output, bs, 'max')
-        mnpool = self.pool(output,bs, 'min')
-        x = torch.cat([output[-1], mxpool, avgpool, mnpool], 1)
+        #mnpool = self.pool(output,bs, 'min')
+        x = torch.cat([output[-1], mxpool, avgpool], 1)  # 3 * emb_sz
         for l in self.layers:
             l_x = l(x)
             x = F.relu(l_x)
         return l_x, raw_outputs, outputs
 
+
+# class PoolingHighway(PoolingLinearClassifier):
+#
+#     def __init__(self, layers, drops):
+#         super().__init__(layers, drops)
+#         self.proj = nn.Linear(e_word, e_word, bias=True)
+#         self.gate = nn.Linear(e_word, e_word, bias=True)
+#         self.dropout = nn.Dropout(.5)
+#         self.sigmoid = torch.nn.Sigmoid()
+#
+#     def forward(self, input):
+#         raw_outputs, outputs = input
+#         output = outputs[-1]
+#         sl,bs,_ = output.size()
+#         avgpool = self.pool(output, bs, 'avg')
+#         mxpool = self.pool(output, bs, 'max')
+#         xconv_out = torch.cat([output[-1], mxpool, avgpool], 1)  # 3 * emb_sz
+#         xproj = nn.ReLU()(self.proj(xconv_out))
+#         xgate = self.sigmoid(self.gate(xconv_out))
+#         xhighway = (xgate * xproj) + ((1 - xgate) * xconv_out)
+#         xword_emb = self.dropout(xhighway)
+#         return xword_emb
 
 class SequentialRNN(nn.Sequential):
     def reset(self):
