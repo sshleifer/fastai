@@ -208,8 +208,7 @@ class PoolingLinearClassifier(nn.Module):
         sl,bs,_ = output.size()
         avgpool = self.pool(output, bs, 'avg')
         mxpool = self.pool(output, bs, 'max')
-        mnpool = self.pool(output,bs, 'min')
-        import pdb; pdb.set_trace()
+        # mnpool = self.pool(output,bs, 'min')
         x = torch.cat([output[-1], mxpool, avgpool], 1)  # 3 * emb_sz
         for l in self.layers:
             l_x = l(x)
