@@ -68,7 +68,7 @@ def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
         vs = len(itos)
 
     m = get_rnn_classifier(bptt, 20*70, c, vs, emb_sz=em_sz, n_hid=nh, n_layers=nl, pad_token=1,
-                layers=[em_sz*3, 50, c], drops=[0., 0.])
+                layers=[em_sz*3 + nh, 60, c], drops=[0., 0.])
     learn = RNN_Learner(md, TextModel(to_gpu(m)))
     if load_encoder:
         learn.load_encoder(lm_file)
