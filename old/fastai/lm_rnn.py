@@ -209,34 +209,42 @@ class PoolingLinearClassifier(nn.Module):
         avgpool = self.pool(output, bs, 'avg')
         mxpool = self.pool(output, bs, 'max')
         # mnpool = self.pool(output,bs, 'min')
-        x = torch.cat([output[-1], mxpool, avgpool], 1)  # 3 * emb_sz
+        x = torch.cat([output[-1], mxpool, avgpool,], 1)  # 3 * emb_sz
         for l in self.layers:
             l_x = l(x)
             x = F.relu(l_x)
         return l_x, raw_outputs, outputs
 
+class DeepPoolLinearClassifier(nn.Module):
+    def __init__(self, layers, drops):
+        super().__init__()
+        self.layers = nn.ModuleList([
+            LinearBlock(layers[i], layers[i + 1], drops[i]) for i in range(len(layers) - 1)])
 
-# class PoolingHighway(PoolingLinearClassifier):
-#
-#     def __init__(self, layers, drops):
-#         super().__init__(layers, drops)
-#         self.proj = nn.Linear(e_word, e_word, bias=True)
-#         self.gate = nn.Linear(e_word, e_word, bias=True)
-#         self.dropout = nn.Dropout(.5)
-#         self.sigmoid = torch.nn.Sigmoid()
-#
-#     def forward(self, input):
-#         raw_outputs, outputs = input
-#         output = outputs[-1]
-#         sl,bs,_ = output.size()
-#         avgpool = self.pool(output, bs, 'avg')
-#         mxpool = self.pool(output, bs, 'max')
-#         xconv_out = torch.cat([output[-1], mxpool, avgpool], 1)  # 3 * emb_sz
-#         xproj = nn.ReLU()(self.proj(xconv_out))
-#         xgate = self.sigmoid(self.gate(xconv_out))
-#         xhighway = (xgate * xproj) + ((1 - xgate) * xconv_out)
-#         xword_emb = self.dropout(xhighway)
-#         return xword_emb
+    def pool(self, x, bs, pool_fn_name):
+        #f = F.adaptive_max_pool1d if pool_fn_name else F.adaptive_avg_pool1d
+        pool_fns = {
+            'max': F.adaptive_max_pool1d,
+            'min': min_pool,
+            'avg': F.adaptive_avg_pool1d,
+        }
+        f = pool_fns[pool_fn_name]
+
+        return f(x.permute(1,2,0), (1,)).view(bs,-1)
+
+    def forward(self, input):
+        raw_outputs, outputs = input
+        output = outputs[-1]
+        sl,bs,_ = output.size()
+        avgpool = self.pool(output, bs, 'avg')
+        mxpool = self.pool(output, bs, 'max')
+        mxpool_prev = self.pool(outputs[0], bs, 'min')
+        x = torch.cat([output[-1], mxpool, avgpool, mxpool_prev], 1)  # 3 * emb_sz + 1150
+        for l in self.layers:
+            l_x = l(x)
+            x = F.relu(l_x)
+        return l_x, raw_outputs, outputs
+
 
 class SequentialRNN(nn.Sequential):
     def reset(self):
@@ -285,6 +293,6 @@ def get_rnn_classifier(bptt, max_seq, n_class, n_tok, emb_sz, n_hid, n_layers, p
                       dropouth=0.3, dropouti=0.5, dropoute=0.1, wdrop=0.5, qrnn=False):
     rnn_enc = MultiBatchRNN(bptt, max_seq, n_tok, emb_sz, n_hid, n_layers, pad_token=pad_token, bidir=bidir,
                       dropouth=dropouth, dropouti=dropouti, dropoute=dropoute, wdrop=wdrop, qrnn=qrnn)
-    return SequentialRNN(rnn_enc, PoolingLinearClassifier(layers, drops))
+    return SequentialRNN(rnn_enc, DeepPoolLinearClassifier(layers, drops))
 
 get_rnn_classifer=get_rnn_classifier

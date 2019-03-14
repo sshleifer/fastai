@@ -81,7 +81,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=1, backwards
     #dps = np.array([0.6,0.5,0.04,0.3,0.4])*dropmult
 
     m = get_rnn_classifier(bptt, 20*bptt, c, vs, emb_sz=em_sz, n_hid=nh, n_layers=nl, pad_token=1,
-              layers=[em_sz*3, 50, c], drops=[dps[4], 0.1],
+              layers=[em_sz*3 + nh, 60, c], drops=[dps[4], 0.1],
               dropouti=dps[0], wdrop=dps[1], dropoute=dps[2], dropouth=dps[3])
 
     learn = RNN_Learner(md, TextModel(to_gpu(m)), opt_fn=opt_fn)
