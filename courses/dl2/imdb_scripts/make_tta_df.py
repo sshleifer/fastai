@@ -33,16 +33,23 @@ def assign_error(df_tta):
     return (df_tta['labels'] - df_tta['yhat']).abs()
 
 
-def assign_acc(df_tta):
-    return (df_tta.yhat > .5) == df_tta.labels
+def calc_acc(df_tta, yhat_col='yhat', y_col='labels'):
+    return (df_tta[yhat_col] > .5) == df_tta[y_col]
 
 
 def analyze_tta_df(df_tta):
     avg = df_tta.groupby("record_id")[['yhat', 'labels']].mean().reset_index()
     avg['btrans'] = 'avg'
     avg['error'] = assign_error(avg)
-    avg['acc'] = assign_acc(avg)
+    avg['acc'] = calc_acc(avg)
     df_tta['error'] = assign_error(df_tta)
-    df_tta['acc'] = assign_acc(df_tta)
+    df_tta['acc'] = calc_acc(df_tta)
     errs = pd.concat([df_tta, avg]).groupby('btrans')[['error', 'acc']].mean()
     return errs, df_tta
+
+def lin_combo_scores(xydf, c1, c2, start=.5):
+    res ={}
+    for x in np.arange(start, 1.01, .01):
+        acc = xydf.assign(yhat=(xydf[c1] * x) + (xydf[c2] * (1 - x))).pipe(calc_acc).mean()
+        res[x] = acc
+    return pd.Series(res)
