@@ -47,7 +47,7 @@ def analyze_tta_df(df_tta):
     errs = pd.concat([df_tta, avg]).groupby('btrans')[['error', 'acc']].mean()
     return errs, df_tta
 
-def lin_combo_scores(xydf, c1, c2, start=.5):
+def calc_combo_scores(xydf, c1, c2, start=.5):
     res ={}
     for x in np.arange(start, 1.01, .01):
         acc = xydf.assign(yhat=(xydf[c1] * x) + (xydf[c2] * (1 - x))).pipe(calc_acc).mean()
