@@ -16,6 +16,20 @@ assert WT103_PATH.exists()
 ORIG_SMALL_DATA_DIR = Path('/home/paperspace/text-augmentation/imdb_1k3k/')
 
 
+def gen_eda_dataset(src_path, **eda_kwargs):
+    from eda import eda
+    paths = list((src_path / 'neg/').glob('*')) + list((src_path / 'pos/').glob('*'))
+    for p in paths: assert 'EDA' not in str(p)
+    for path in tqdm_notebook(paths):
+        txt = path.open().read()
+        new_sentences = eda(txt, **eda_kwargs)
+        for i, new_sent in enumerate(new_sentences):
+            new_name = f'{path.name[:-4]}_EDA_{i}.txt'
+            new_path = path.parent / new_name
+            with new_path.open('w') as f:
+                f.write(new_sent)
+
+
 def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 
     if dest_path is None:
@@ -53,6 +67,16 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
 
 import time
 
+
+def run_eda_experiment(experiment_dir, n_aug=4, n_train=2000):
+    """Experiment on smaller version of IMBD with different augmentation strategies"""
+    results = {}
+    start = time.time()
+    train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=10)
+    # Train Classifier
+    learn = train_clas(experiment_dir, 0)
+    estime = time.time() - start
+    results.update({'metrics': learn.sched.rec_metrics, 'time': estime})
 
 def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=None, eval_tta=False,
                      do_baseline=True, tta_langs=('et',)):
