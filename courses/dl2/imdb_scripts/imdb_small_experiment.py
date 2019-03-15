@@ -77,6 +77,7 @@ def run_eda_experiment(experiment_dir, n_aug=4, n_train=2000):
     learn = train_clas(experiment_dir, 0)
     estime = time.time() - start
     results.update({'metrics': learn.sched.rec_metrics, 'time': estime})
+    return results
 
 def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=None, eval_tta=False,
                      do_baseline=True, tta_langs=('et',)):
