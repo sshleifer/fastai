@@ -132,9 +132,9 @@ def make_val_csv(small_data_dir, crosswalk_path=None):
     make_csv_from_dir(small_data_dir /'test', val_csv_path,
                       crosswalk_file=crosswalk_path)
 
-def make_train_csv(small_data_dir):
+def make_train_csv(small_data_dir, crosswalk_path=None):
     val_csv_path = small_data_dir/'train.csv'
-    make_csv_from_dir(small_data_dir/'train', val_csv_path)
+    make_csv_from_dir(small_data_dir/'train', val_csv_path, crosswalk_file=crosswalk_path)
 
 def prepare_tokens_and_labels(small_data_dir, max_vocab=60000):
     train_csv_path = small_data_dir/'train.csv'
@@ -146,6 +146,23 @@ def prepare_tokens_and_labels(small_data_dir, max_vocab=60000):
     create_toks(small_data_dir)
     tok2id(small_data_dir, max_vocab=max_vocab)  # usually don't use this much
 
+
+def agg_zshot_experiments(res_dct):
+    j = []
+    n_tested = set(list(res_dct.keys()) + [100, 500, 1000, 2000, 3000, 5000, 10000])
+    for n in n_tested:
+        if n not in res_dct: print(f'missing results for n={n}'); continue
+        for r in res_dct[n]:
+            aggd = {k: r[k] for k in ['time']}
+            aggd['max_score'] = max(r['metrics'])
+            aggd['last_score'] = r['metrics'][-1]
+            aggd['n'] = n
+            j.append(aggd)
+    res_df = pd.DataFrame(j)
+    gb = res_df.groupby('n')
+    eda_tab = gb.mean().assign(n_runs=gb.size())
+    eda_tab['mins'] = (eda_tab['time'] / 60).round(1)
+    return eda_tab.drop('time', 1)
 
 
 if __name__ == '__main__': fire.Fire(run_experiment)
