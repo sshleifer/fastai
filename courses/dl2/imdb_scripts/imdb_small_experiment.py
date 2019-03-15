@@ -68,13 +68,14 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
 import time
 
 
-def run_eda_experiment(experiment_dir, n_aug=4, n_train=2000):
+def run_eda_experiment(experiment_dir, wt_103_path=WT103_PATH, from_scratch=False, **classif_kwargs):
     """Experiment on smaller version of IMBD with different augmentation strategies"""
     results = {}
     start = time.time()
-    train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=10)
+    if not from_scratch:
+        train_lm(experiment_dir, wt_103_path, early_stopping=True, cl=10)
     # Train Classifier
-    learn = train_clas(experiment_dir, 0)
+    learn = train_clas(experiment_dir, 0, from_scratch=from_scratch, **classif_kwargs)
     estime = time.time() - start
     results.update({'metrics': learn.sched.rec_metrics, 'time': estime})
     return results

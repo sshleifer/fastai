@@ -36,7 +36,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=20, backward
     final_clas_file = f'{PRE}{clas_id}clas_1'
     lm_file = f'{PRE}{lm_id}lm_enc'
     lm_path = dir_path / 'models' / f'{lm_file}.h5'
-    if not lm_path.exists():
+    if not lm_path.exists() and not from_scratch:
         lm_file = f'{lm_id}lm_enc'
         lm_path = dir_path / 'models' / f'{lm_file}.h5'
         assert lm_path.exists(), f'Error: {lm_path} does not exist.'
