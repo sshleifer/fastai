@@ -4,6 +4,7 @@ from .lm_rnn import *
 from torch.utils.data.sampler import Sampler
 import spacy
 from spacy.symbols import ORTH
+from .focal_loss import FocalLoss
 
 re_tok = re.compile(f'([{string.punctuation}“”¨«»®´·º½¾¿¡§£₤‘’])')
 def tokenize(s): return re_tok.sub(r' \1 ', s).split()
@@ -221,7 +222,7 @@ class RNN_Learner(Learner):
     def __init__(self, data, models, **kwargs):
         super().__init__(data, models, **kwargs)
 
-    def _get_crit(self, data): return F.cross_entropy
+    def _get_crit(self, data): return FocalLoss()
     def fit(self, *args, **kwargs): return super().fit(*args, **kwargs, seq_first=True)
 
     def save_encoder(self, name): save_model(self.model[0], self.get_model_path(name))
