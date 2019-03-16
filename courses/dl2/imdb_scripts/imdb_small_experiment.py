@@ -59,7 +59,7 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
     prepare_tokens_and_labels(experiment_dir)
     # Finetune LM
     if not from_scratch:
-        if
+        print(f'batch size: {bs}')
         train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=lm_cl, bs=bs)
     # Train Classifier
     learn = train_clas(experiment_dir, 0, cl=classif_cl, do_vat=do_vat,from_scratch=from_scratch,
