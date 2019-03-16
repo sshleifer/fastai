@@ -89,7 +89,7 @@ def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=Non
     start = time.time()
     es_metrics = run_experiment(
         target_language, orig_small_data_dir=reference_path, lm_cl=10,
-        n_to_copy=n_to_copy,
+        n_to_copy=n_to_copy, **classif_kwargs
     )
     estime = time.time() - start
     results.update({'btrans': es_metrics, 'btrans_time': estime})
@@ -107,7 +107,7 @@ def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=Non
 
     start = time.time()
     baseline_metrics = run_experiment(target_language, orig_small_data_dir=reference_path,
-                                      n_to_copy=0)
+                                      n_to_copy=0, **classif_kwargs)
     base_time = time.time() - start
     results.update({'baseline': baseline_metrics, 'baseline_time': base_time, })
     return results
