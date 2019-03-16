@@ -81,7 +81,7 @@ def run_eda_experiment(experiment_dir, wt_103_path=WT103_PATH, from_scratch=Fals
     return results
 
 def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=None, eval_tta=False,
-                     do_baseline=True, tta_langs=('et',)):
+                     do_baseline=True, tta_langs=('et',), **classif_kwargs):
     """Experiment on smaller version of IMBD with different augmentation strategies"""
     reference_path = make_small_ds(src_path, None, n_train=n_train)
     experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
