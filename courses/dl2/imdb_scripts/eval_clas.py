@@ -5,7 +5,7 @@ from sklearn.metrics import confusion_matrix
 import time
 def eval_clas(model_dir_path, final_clas_file=None, load_encoder=True,
               lm_file=None, val_dir=None, cuda_id=0,
-              lm_id='', clas_id=None, bs=64, backwards=False, save_hard=False,
+              lm_id='', clas_id=None, bs=64, backwards=False,
               use_sampler=True, n_val=None, save_path='preds.npy', bpe=False):
     start= time.time()
     print(f'model_dir_path {model_dir_path}; cuda_id {cuda_id}; lm_id {lm_id}; '
