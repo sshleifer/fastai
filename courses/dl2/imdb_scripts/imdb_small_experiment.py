@@ -47,8 +47,7 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
         orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
-                   from_scratch=False,
-
+                   from_scratch=False, bs=64,
                    do_vat=False, **classif_kwargs):
     experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if experiment_dir.exists() and not second_lang:
@@ -60,9 +59,11 @@ def run_experiment(target_language, n_to_copy=None, second_lang=False,
     prepare_tokens_and_labels(experiment_dir)
     # Finetune LM
     if not from_scratch:
+        if
         train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=lm_cl, bs=bs)
     # Train Classifier
     learn = train_clas(experiment_dir, 0, cl=classif_cl, do_vat=do_vat,from_scratch=from_scratch,
+                       bs=bs,
                        **classif_kwargs)
 
     return learn.sched.rec_metrics
