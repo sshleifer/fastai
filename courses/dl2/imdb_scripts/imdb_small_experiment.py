@@ -45,15 +45,58 @@ def make_small_ds(src_path, dest_path, n_train, n_test=3000):
 
 #big_data_dir = Path('/home/paperspace/text-augmentation/imdb')
 
+def run50_experiment(experiment_dir, aug_langs, n_per_aug_lang=None, eda_num_aug=2):
+    if experiment_dir.exists():
+        shutil.rmtree(experiment_dir)
+
+    reference_path = make_small_ds(BIG_PATH, None, n_train=50, n_test=1000)
+    shutil.copytree(reference_path, experiment_dir)
+
+    for lang in aug_langs:
+        add_aug_files(lang, experiment_dir, n_to_copy=n_per_aug_lang)
+    gen_eda_dataset(experiment_dir, num_aug=eda_num_aug)
+    prepare_tokens_and_labels(experiment_dir)
+
+    train_lm(experiment_dir, WT103_PATH, early_stopping=True, cl=5, bs=64)
+    learn = train_clas(experiment_dir, 0, cl=10, bs=64)
+    return learn.sched.rec_metrics
+
+
+PARAMS = [
+
+    ['es', 'fr'], 9
+    ['es', 'fr'], 1
+    ['es', 'fr'], 4
+    ['es', 'de'], 1
+]
+
+
+def fit_ensemble(fnames):
+    X = zscore(xydf[fnames])
+    clf = LogisticRegressionCV(penalty='l1', solver='liblinear')
+    clf.fit(X,  xydf['labels'])
+    coef = pd.Series(dict(zip(fnames, clf.coef_[0]))).sort_values(ascending=False)
+    acc = clf.score(X, xydf['labels'])
+    return coef, acc
+
+def fit_lg_ensemble(fnames):
+    clf = LGBMClassifier(max_depth=3)
+    X = xydf[fnames]
+    clf.fit(X, xydf['labels'])
+    acc = clf.score(X, xydf['labels'])
+    return acc
+
+
+
 def run_experiment(target_language, n_to_copy=None, second_lang=False,
-        orig_small_data_dir=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
+                   reference_path=ORIG_SMALL_DATA_DIR, classif_cl=20, lm_cl=4,
                    from_scratch=False, bs=64,
                    do_vat=False, **classif_kwargs):
     experiment_dir = Path(f'/home/paperspace/text-augmentation/imdb_small_aug_{target_language}')
     if experiment_dir.exists() and not second_lang:
         shutil.rmtree(experiment_dir)
     if not second_lang:
-        shutil.copytree(orig_small_data_dir, experiment_dir)
+        shutil.copytree(reference_path, experiment_dir)
 
     add_aug_files(target_language, experiment_dir, n_to_copy=n_to_copy)
     prepare_tokens_and_labels(experiment_dir)
@@ -93,7 +136,7 @@ def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=Non
     results = {}
     start = time.time()
     es_metrics = run_experiment(
-        target_language, orig_small_data_dir=reference_path, lm_cl=10,
+        target_language, reference_path=reference_path, lm_cl=10,
         n_to_copy=n_to_copy, **classif_kwargs
     )
     estime = time.time() - start
@@ -111,7 +154,7 @@ def run_n_experiment(src_path, target_language='es', n_train=2000, n_to_copy=Non
         return results
 
     start = time.time()
-    baseline_metrics = run_experiment(target_language, orig_small_data_dir=reference_path,
+    baseline_metrics = run_experiment(target_language, reference_path=reference_path,
                                       n_to_copy=0, **classif_kwargs)
     base_time = time.time() - start
     results.update({'baseline': baseline_metrics, 'baseline_time': base_time, })

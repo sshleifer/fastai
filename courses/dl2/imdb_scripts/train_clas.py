@@ -72,7 +72,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=20, backward
     trn_samp = SortishSampler(trn_sent, key=lambda x: len(trn_sent[x]), bs=bs//2)
     val_samp = SortSampler(val_sent, key=lambda x: len(val_sent[x]))
     trn_dl = DataLoader(trn_ds, bs//2, transpose=True, num_workers=1, pad_idx=1, sampler=trn_samp)
-    val_dl = DataLoader(val_ds, bs, transpose=True, num_workers=1, pad_idx=1, sampler=val_samp)
+    val_dl = DataLoader(val_ds, 64, transpose=True, num_workers=1, pad_idx=1, sampler=val_samp)
     md = ModelData(dir_path, trn_dl, val_dl)
 
     dps = np.array([0.4,0.5,0.05,0.3,0.4])*dropmult
