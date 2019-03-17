@@ -149,7 +149,7 @@ def train_clas(dir_path, cuda_id, lm_id='', clas_id=None, bs=64, cl=20, backward
 
     time_str = time.strftime('%m-%d_%H:%M:%S')
     save_path = f'{PRE}_es_from_{time_str}'
-    es = EarlyStopping(learn, save_path, patience=100)
+    es = EarlyStopping(learn, save_path, patience=6)
 
     learn.fit(lrs, n_cycles, wds=wd, cycle_len=cl, use_clr=(8,8) if use_clr else None, do_vat=do_vat,
               callbacks=[es])

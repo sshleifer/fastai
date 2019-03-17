@@ -47,7 +47,14 @@ def copy_subset_of_files(src_path: Path, dest_path, n=500,
         shutil.copy(sp, dest_path)
 
 
-
+def copy_n_rand(sdir, dest_path, n, pat='*.txt'):
+    paths = list(sdir.glob(pat))
+    assert len(paths) > 0
+    small_paths = np.random.choice(paths, size=n, replace=False)
+    for sp in small_paths:
+        full_dest_path = dest_path / sp.relative_to(sdir.parent.parent)
+        make_dir_structure_under(full_dest_path)
+        shutil.copy(sp, full_dest_path)
 
 CLASSES = ['neg', 'pos', 'unsup']
 def read_texts(path, classes=CLASSES):
