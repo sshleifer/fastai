@@ -239,6 +239,34 @@ class PoolingLinearClassifier(nn.Module):
         x = self.layers(x)
         return x, raw_outputs, outputs
 
+
+
+class AuxTargetClassifier(nn.Module):
+    "Create a linear classifier with pooling."
+
+    def __init__(self, layers:Collection[int], drops:Collection[float]):
+        super().__init__()
+        mod_layers = []
+        activs = [nn.ReLU(inplace=True)] * (len(layers) - 2) + [None]
+        for n_in,n_out,p,actn in zip(layers[:-1],layers[1:], drops, activs):
+            mod_layers += bn_drop_lin(n_in, n_out, p=p, actn=actn)
+        self.layers = nn.Sequential(*mod_layers)
+        print(n_out)
+        n_aux_targets  =  12
+        self.aux_layer = bn_drop_lin(n_out, n_aux_targets, p=drops[-1], actn=None)
+
+    def forward(self, input:Tuple[Tensor,Tensor, Tensor])->Tuple[Tensor,Tensor,Tensor]:
+        raw_outputs,outputs,mask = input
+        output = outputs[-1]
+        avg_pool = output.masked_fill(mask[:,:,None], 0).mean(dim=1)
+        avg_pool *= output.size(1) / (output.size(1)-mask.type(avg_pool.dtype).sum(dim=1))[:,None]
+        max_pool = output.masked_fill(mask[:,:,None], -float('inf')).max(dim=1)[0]
+        x = torch.cat([output[:,-1], max_pool, avg_pool], 1)
+        x = self.layers(x)
+        x2 = self.aux_layer(x)
+        catted  = torch.cat([x, x2], 1)
+        return catted, raw_outputs, outputs
+
 class MultiBatchEncoder(nn.Module):
     "Create an encoder over `module` that can process a full sentence."
     def __init__(self, bptt:int, max_len:int, module:nn.Module, pad_idx:int=1):
@@ -266,6 +294,7 @@ class MultiBatchEncoder(nn.Module):
     
 def get_text_classifier(arch:Callable, vocab_sz:int, n_class:int, bptt:int=70, max_len:int=20*70, config:dict=None, 
                         drop_mult:float=1., lin_ftrs:Collection[int]=None, ps:Collection[float]=None,
+                        aux=False,
                         pad_idx:int=1) -> nn.Module:
     "Create a text classifier from `arch` and its `config`, maybe `pretrained`."
     meta = _model_meta[arch]
@@ -278,15 +307,19 @@ def get_text_classifier(arch:Callable, vocab_sz:int, n_class:int, bptt:int=70, m
     ps = [config.pop('output_p')] + ps
     init = config.pop('init') if 'init' in config else None
     encoder = MultiBatchEncoder(bptt, max_len, arch(vocab_sz, **config), pad_idx=pad_idx)
-    model = SequentialRNN(encoder, PoolingLinearClassifier(layers, ps))
+    if aux:
+        model = SequentialRNN(encoder, AuxTargetClassifier(layers, ps))
+    else:
+        model = SequentialRNN(encoder, PoolingLinearClassifier(layers, ps))
     return model if init is None else model.apply(init)
 
 def text_classifier_learner(data:DataBunch, arch:Callable, bptt:int=70, max_len:int=70*20, config:dict=None, 
-                            pretrained:bool=True, drop_mult:float=1., lin_ftrs:Collection[int]=None, 
+                            pretrained:bool=True, drop_mult:float=1., lin_ftrs:Collection[int]=None,
+                            aux=False,
                             ps:Collection[float]=None, **learn_kwargs) -> 'TextClassifierLearner':
     "Create a `Learner` with a text classifier from `data` and `arch`."
     model = get_text_classifier(arch, len(data.vocab.itos), data.c, bptt=bptt, max_len=max_len,
-                                config=config, drop_mult=drop_mult, lin_ftrs=lin_ftrs, ps=ps)
+                                config=config, drop_mult=drop_mult, lin_ftrs=lin_ftrs, ps=ps, aux=aux)
     meta = _model_meta[arch]
     learn = RNNLearner(data, model, split_func=meta['split_clas'], **learn_kwargs)
     if pretrained:
