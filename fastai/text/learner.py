@@ -252,7 +252,7 @@ class AuxTargetClassifier(nn.Module):
             mod_layers += bn_drop_lin(n_in, n_out, p=p, actn=actn)
         self.layers = nn.Sequential(*mod_layers)
         print(n_out)
-        n_aux_targets  =  12
+        n_aux_targets  =  6
         self.aux_layer = nn.Sequential(*bn_drop_lin(n_out, n_aux_targets, p=drops[-1], actn=None))
 
     def forward(self, input:Tuple[Tensor,Tensor, Tensor])->Tuple[Tensor,Tensor,Tensor]:
@@ -264,7 +264,7 @@ class AuxTargetClassifier(nn.Module):
         x = torch.cat([output[:,-1], max_pool, avg_pool], 1)
         x = self.layers(x)
         x2 = self.aux_layer(x)
-        catted  = torch.cat([x, x2], 1)
+        catted = torch.cat([x, x2], 1)
         return catted, raw_outputs, outputs
 
 class MultiBatchEncoder(nn.Module):
