@@ -263,10 +263,10 @@ class AuxTargetClassifier(nn.Module):
         max_pool = output.masked_fill(mask[:,:,None], -float('inf')).max(dim=1)[0]
         x = torch.cat([output[:,-1], max_pool, avg_pool], 1)
         x = self.layers(x)
-        x2 = self.aux_layer(x)
-        import pdb; pdb.set_trace()
-        catted = torch.cat([x, x2], 1)
-        return catted, raw_outputs, outputs
+        #x2 = self.aux_layer(x)
+        #import pdb; pdb.set_trace()
+        #catted = torch.cat([x, x2], 1)
+        return x, raw_outputs, outputs
 
 class MultiBatchEncoder(nn.Module):
     "Create an encoder over `module` that can process a full sentence."
