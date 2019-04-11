@@ -253,7 +253,7 @@ class AuxTargetClassifier(nn.Module):
         self.layers = nn.Sequential(*mod_layers)
         print(n_out)
         n_aux_targets  =  12
-        self.aux_layer = bn_drop_lin(n_out, n_aux_targets, p=drops[-1], actn=None)
+        self.aux_layer = nn.Sequential(*bn_drop_lin(n_out, n_aux_targets, p=drops[-1], actn=None))
 
     def forward(self, input:Tuple[Tensor,Tensor, Tensor])->Tuple[Tensor,Tensor,Tensor]:
         raw_outputs,outputs,mask = input
