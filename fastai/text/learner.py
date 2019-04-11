@@ -264,6 +264,7 @@ class AuxTargetClassifier(nn.Module):
         x = torch.cat([output[:,-1], max_pool, avg_pool], 1)
         x = self.layers(x)
         x2 = self.aux_layer(x)
+        import pdb; pdb.set_trace()
         catted = torch.cat([x, x2], 1)
         return catted, raw_outputs, outputs
 
