@@ -26,7 +26,7 @@ python main.py
 
 ## Dev on GCloud
 
-ex. rsync with local filesystem:
+ex. rsync with local filesystem (from `fastai/fastai/imagito`):
 ```
-rsync -avhr ./ eprokop@34.83.17.89:/home/eprokop/imagenettissimo
+rsync -avhr ./ eprokop@34.83.17.89:/home/eprokop/fastai/imagito
 ```

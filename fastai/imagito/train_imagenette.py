@@ -1,3 +1,5 @@
+import datetime
+
 from fastai.script import *
 from fastai.vision import *
 from fastai.callbacks import *
@@ -46,6 +48,29 @@ def get_data(size, woof, bs, sample, classes=None, workers=None):
             .presize(size, scale=(0.35,1))
             .normalize(imagenet_stats))
 
+def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
+                   arch, dump, sample, classes=None):
+    return {
+        'gpu': gpu,
+        'woof': woof,
+        'lr': lr,
+        'size': size,
+        'alpha': alpha,
+        'mom': mom,
+        'eps': eps,
+        'epochs': epochs,
+        'bs': bs,
+        'mixup': mixup,
+        'opt': opt,
+        'arch': arch,
+        'dump': dump,
+        'sample': sample,
+        'classes': classes
+    }
+
+def results_path(filename):
+    return './results/' + filename
+
 @call_parse
 def main(
         gpu:Param("GPU to run on", str)=None,
@@ -81,16 +106,29 @@ def main(
     lr *= bs_rat
 
     m = globals()[arch]
+
+    now = str(datetime.datetime.utcnow()).replace(' ', '_')
+    params_dict = params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup,
+                                 opt, arch, dump, sample, classes)
+
+    # save params to file like 2019-05-12_22:10:10.204037_params.pickle
+    with open(results_path(now + '_params.pickle'), 'wb') as handle:
+        pickle.dump(params_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     learn = (Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
              metrics=[accuracy,top_k_accuracy],
              bn_wd=False, true_wd=True,
              loss_func = LabelSmoothingCrossEntropy())
             )
+
     if dump: print(learn.model); exit()
     if mixup: learn = learn.mixup(alpha=mixup)
     learn = learn.to_fp16(dynamic=True)
     if gpu is None:       learn.to_parallel()
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
 
-    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3)
+    # save results to a file like 2019-05-12_22:10:10.204037.csv
+    csv_logger = CSVLogger(learn, filename=results_path(now))
+
+    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3, callbacks=[csv_logger])
 
