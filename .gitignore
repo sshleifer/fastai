@@ -1,4 +1,5 @@
 .bundle/
+courses/dl2
 *.bak
 *.log
 *~
