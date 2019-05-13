@@ -84,6 +84,7 @@ def main(
         opt: Param("Optimizer (adam,rms,sgd)", str)='adam',
         arch: Param("Architecture (xresnet34, xresnet50, presnet34, presnet50)", str)='xresnet50',
         dump: Param("Print model; don't train", int)=0,
+        fp16=False,
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None
         ):
@@ -119,7 +120,7 @@ def main(
 
     if dump: print(learn.model); exit()
     if mixup: learn = learn.mixup(alpha=mixup)
-    learn = learn.to_fp16(dynamic=True)
+    if fp16: learn = learn.to_fp16(dynamic=True)
     if gpu is None:       learn.to_parallel()
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
 
