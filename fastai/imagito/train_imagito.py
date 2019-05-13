@@ -9,8 +9,9 @@ from torchvision.models import *
 from fastai.vision.models.xresnet import *
 from fastai.vision.models.xresnet2 import *
 from fastai.vision.models.presnet import *
+from fastai.imagito.utils import *
 
-from classes import ClassFolders
+from fastai.imagito.classes import ClassFolders
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
@@ -107,19 +108,21 @@ def main(
 
     m = globals()[arch]
 
-    now = str(datetime.datetime.utcnow()).replace(' ', '_')
+    now = get_date_str(seconds=False)
     params_dict = params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup,
                                  opt, arch, dump, sample, classes)
 
     # save params to file like 2019-05-12_22:10:10.204037_params.pickle
-    with open(results_path(now + '_params.pickle'), 'wb') as handle:
-        pickle.dump(params_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle_save(params_dict, now + '_params.pkl')
+    model_dir = Path(f'experiments/{now}')
+    Path('experiments').mkdir(exist_ok=True)
+    model_dir.mkdir(exist_ok=False)
+    learn = Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
+                    path=model_dir,
+                    metrics=[accuracy, top_k_accuracy],
+                    bn_wd=False, true_wd=True,
+                    loss_func=LabelSmoothingCrossEntropy())
 
-    learn = (Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
-             metrics=[accuracy,top_k_accuracy],
-             bn_wd=False, true_wd=True,
-             loss_func = LabelSmoothingCrossEntropy())
-            )
 
     if dump: print(learn.model); exit()
     if mixup: learn = learn.mixup(alpha=mixup)
@@ -127,8 +130,9 @@ def main(
     if gpu is None:       learn.to_parallel()
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
 
-    # save results to a file like 2019-05-12_22:10:10.204037.csv
-    csv_logger = CSVLogger(learn, filename=results_path(now))
+    # save results to a file like 2019-05-12_22:10/metrics.csv
+    csv_logger = CSVLogger(learn, filename=model_dir/'metrics.csv')
 
-    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3, callbacks=[csv_logger])
+    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
+                        callbacks=[csv_logger])
 
