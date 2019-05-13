@@ -23,6 +23,7 @@ python fastai/imagito/train_imagito.py [args..]
 ```
 any kwarg to the `main` func can be passed through the command line
 
+or edit the param grid in 
 
 ## Dev on GCloud
 
