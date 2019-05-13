@@ -1,14 +1,8 @@
-import datetime
-
 from fastai.script import *
 from fastai.vision import *
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
-from torchvision.models import *
-from fastai.vision.models.xresnet import *
-from fastai.vision.models.xresnet2 import *
-from fastai.vision.models.presnet import *
 from fastai.imagito.utils import *
 
 from fastai.imagito.classes import ClassFolders
@@ -71,6 +65,10 @@ def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
 
 def results_path(filename):
     return './results/' + filename
+
+
+#from fastprogress
+
 
 @call_parse
 def main(

@@ -28,3 +28,9 @@ def pickle_load_gzip(path):
 def pickle_load(path):
     with open(path, 'rb') as f:
         return pickle.load(f)
+
+
+from tqdm import *
+from ipykernel.kernelapp import IPKernelApp
+def in_notebook(): return IPKernelApp.initialized()
+tqdm_nice = tqdm_notebook if in_notebook() else tqdm
