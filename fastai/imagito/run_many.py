@@ -1,6 +1,6 @@
 from sklearn.model_selection import ParameterGrid
-from imagito.train_imagito import main
-from imagito.utils import tqdm_nice
+from .train_imagito import main
+from .utils import tqdm_nice
 
 pg = list(ParameterGrid({
         #'lr': lr,
