@@ -130,4 +130,5 @@ def main(
 
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
                         callbacks=[csv_logger])
+    learn.destroy()
 
