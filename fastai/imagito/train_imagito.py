@@ -91,7 +91,7 @@ def main(
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None
         ):
     "Distributed training of Imagenette."
-
+    params_dict = locals()
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
@@ -107,10 +107,6 @@ def main(
     lr *= bs_rat
 
     m = globals()[arch]
-
-
-    params_dict = params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup,
-                                 opt, arch, dump, sample, classes)
     # save params to file like experiments/2019-05-12_22:10/params.pkl
     now = get_date_str(seconds=False)
     Path('experiments').mkdir(exist_ok=True)
