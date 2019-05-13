@@ -5,17 +5,10 @@ from imagito.utils import tqdm_nice
 pg = list(ParameterGrid({
         #'lr': lr,
         'size': [32, 64, 128, 256],
-        'sample': [1., .5],
+        'sample': [1., .5, .25],
         'classes': [None],
 }))
 
-pg2 = list(ParameterGrid({
-        #'lr': lr,
-        'size': [32, 64, 128, 256],
-        #'mixup': 0.,
-        'sample': [1., .5],
-        'classes': [None,],
-}))
 
 def run_many(pg):
     for pars in tqdm_nice(pg):
