@@ -108,15 +108,16 @@ def main(
 
     m = globals()[arch]
 
-    now = get_date_str(seconds=False)
+
     params_dict = params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup,
                                  opt, arch, dump, sample, classes)
-
-    # save params to file like 2019-05-12_22:10:10.204037_params.pickle
-    pickle_save(params_dict, now + '_params.pkl')
-    model_dir = Path(f'experiments/{now}')
+    # save params to file like experiments/2019-05-12_22:10/params.pkl
+    now = get_date_str(seconds=False)
     Path('experiments').mkdir(exist_ok=True)
+    model_dir = Path(f'experiments/{now}')
     model_dir.mkdir(exist_ok=False)
+    pickle_save(params_dict, model_dir/'params.pkl')
+
     learn = Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
                     path=model_dir,
                     metrics=[accuracy, top_k_accuracy],
@@ -131,7 +132,7 @@ def main(
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
 
     # save results to a file like 2019-05-12_22:10/metrics.csv
-    csv_logger = CSVLogger(learn, filename=model_dir/'metrics.csv')
+    csv_logger = CSVLogger(learn, filename=model_dir/'metrics')
 
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
                         callbacks=[csv_logger])
