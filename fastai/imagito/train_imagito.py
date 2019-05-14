@@ -1,6 +1,6 @@
 from fastai.script import *
 from fastai.vision import *
-from fastai.vision.models.xresnet2 import XResNet
+from fastai.vision.models.xresnet2 import xresnet50_2
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
@@ -98,7 +98,7 @@ def main(
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
-    m = xresnet50 if arch is None else globals()[arch]
+    m = xresnet50_2 if arch is None else globals()[arch]
     # NOTE(SS): globals()[arch] raised KeyError
 
     # save params to file like experiments/2019-05-12_22:10/params.pkl
