@@ -69,7 +69,7 @@ def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
 def main(
         gpu:Param("GPU to run on", str)=None,
         woof: Param("Use imagewoof (otherwise imagenette)", int)=0,
-        lr: Param("Learning rate", float)=1e-3,
+        lr: Param("Learning rate", float)=3e-3,
         size: Param("Size (px: 128,192,224)", int)=128,
         alpha: Param("Alpha", float)=0.99,
         mom: Param("Momentum", float)=0.9,
