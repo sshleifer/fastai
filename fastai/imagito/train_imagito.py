@@ -108,7 +108,7 @@ def main(
     model_dir.mkdir(exist_ok=False)
     pickle_save(params_dict, model_dir/'params.pkl')
 
-    learn = Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
+    learn = Learner(data, m(c_out=len(classes)), wd=1e-2, opt_func=opt_func,
                     path=model_dir,
                     metrics=[accuracy, top_k_accuracy],
                     bn_wd=False, true_wd=True,
