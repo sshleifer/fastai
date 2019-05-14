@@ -17,10 +17,10 @@ pg2 = update_batch_size(ParameterGrid({
     # 'lr': lr,
     'bs': [256],
     'size': [32, 64, 128, 256],
-    'sample': [1., .5, .25],
+    'sample': [1.],
     'classes': [[5,6,7,8,9],],
     'fp16': [True],
-    'epochs': [10,]
+    'epochs': [20,]
 }))
 def run_many(pg):
     failures = []
