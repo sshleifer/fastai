@@ -9,7 +9,7 @@ pg = update_batch_size(ParameterGrid({
     'sample': [1., .5, .25],
     'classes': [None, [0,1,2,3,4]],
     'fp16': [True],
-    'epochs': [10,]
+    'epochs': [20,]
 }))
 
 pg2 = update_batch_size(ParameterGrid({
