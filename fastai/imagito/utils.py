@@ -12,7 +12,7 @@ import gzip
 
 def get_date_str(seconds=False):
     if seconds:
-        return time.strftime('%Y-%m-%d-%H%M:%S')
+        return time.strftime('%Y-%m-%d-%H:%M:%S')
     else:
         return time.strftime('%Y-%m-%d-%H:%M')
 
