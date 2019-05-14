@@ -92,7 +92,7 @@ def main(
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
     elif opt=='rms'  : opt_func = partial(optim.RMSprop, alpha=alpha, eps=eps)
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
-    if classes is not None: classes = [int(i) for i in classes.split(',')]
+    if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
 
     data = get_data(size, woof, bs, sample, classes)
     bs_rat = bs/256
