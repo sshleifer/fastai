@@ -1,6 +1,7 @@
 from fastai.script import *
 from fastai.vision import *
 from fastai.vision.models.xresnet2 import xresnet50_2
+from fastai.vision.models.xresnet import xresnet50
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
