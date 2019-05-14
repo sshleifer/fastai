@@ -1,16 +1,11 @@
-import datetime
-
 from fastai.script import *
 from fastai.vision import *
+from fastai.vision.models.xresnet2 import xresnet50_2
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
-from torchvision.models import *
-from fastai.vision.models.xresnet import *
-from fastai.vision.models.xresnet2 import *
-from fastai.vision.models.presnet import *
-
-from classes import ClassFolders
+from fastai.imagito.utils import *
+from fastai.imagito.classes import ClassFolders
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
@@ -68,8 +63,6 @@ def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
         'classes': classes
     }
 
-def results_path(filename):
-    return './results/' + filename
 
 @call_parse
 def main(
@@ -84,19 +77,20 @@ def main(
         bs: Param("Batch size", int)=256,
         mixup: Param("Mixup", float)=0.,
         opt: Param("Optimizer (adam,rms,sgd)", str)='adam',
-        arch: Param("Architecture (xresnet34, xresnet50, presnet34, presnet50)", str)='xresnet50',
+        arch: Param("Architecture (xresnet34, xresnet50, presnet34, presnet50, None)", str)=None,
         dump: Param("Print model; don't train", int)=0,
+        fp16=False,
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
-        classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None
+        classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
+        save=False,
         ):
     "Distributed training of Imagenette."
-
+    params_dict = locals()
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
     elif opt=='rms'  : opt_func = partial(optim.RMSprop, alpha=alpha, eps=eps)
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
-
     if classes is not None: classes = [int(i) for i in classes.split(',')]
 
     data = get_data(size, woof, bs, sample, classes)
@@ -104,31 +98,35 @@ def main(
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
+    m = xresnet50_2 if arch is None else globals()[arch]
+    # NOTE(SS): globals()[arch] raised KeyError
 
-    m = globals()[arch]
+    # save params to file like experiments/2019-05-12_22:10/params.pkl
+    now = get_date_str(seconds=True)
+    Path('experiments').mkdir(exist_ok=True)
+    model_dir = Path(f'experiments/{now}')
+    model_dir.mkdir(exist_ok=False)
+    pickle_save(params_dict, model_dir/'params.pkl')
 
-    now = str(datetime.datetime.utcnow()).replace(' ', '_')
-    params_dict = params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup,
-                                 opt, arch, dump, sample, classes)
+    learn = Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
+                    path=model_dir,
+                    metrics=[accuracy, top_k_accuracy],
+                    bn_wd=False, true_wd=True,
+                    loss_func=LabelSmoothingCrossEntropy())
 
-    # save params to file like 2019-05-12_22:10:10.204037_params.pickle
-    with open(results_path(now + '_params.pickle'), 'wb') as handle:
-        pickle.dump(params_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    learn = (Learner(data, m(c_out=10), wd=1e-2, opt_func=opt_func,
-             metrics=[accuracy,top_k_accuracy],
-             bn_wd=False, true_wd=True,
-             loss_func = LabelSmoothingCrossEntropy())
-            )
 
     if dump: print(learn.model); exit()
     if mixup: learn = learn.mixup(alpha=mixup)
-    learn = learn.to_fp16(dynamic=True)
+    if fp16: learn = learn.to_fp16(dynamic=True)
     if gpu is None:       learn.to_parallel()
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
 
-    # save results to a file like 2019-05-12_22:10:10.204037.csv
-    csv_logger = CSVLogger(learn, filename=results_path(now))
-
-    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3, callbacks=[csv_logger])
+    # save results to a file like 2019-05-12_22:10/metrics.csv
+    # (CSVLogger model_path/filename + .csv)
+    csv_logger = CSVLogger(learn, filename='metrics')
+    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
+                        callbacks=[csv_logger])
+    if save:
+        learn.save('final_classif')
+    learn.destroy()
 

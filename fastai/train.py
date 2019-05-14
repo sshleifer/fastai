@@ -4,7 +4,7 @@ from .callbacks import *
 from .basic_data import *
 from .basic_train import *
 
-__all__ = ['BnFreeze', 'GradientClipping', 'ShowGraph', 'ClassificationInterpretation', 'fit_one_cycle', 'lr_find', 
+__all__ = ['BnFreeze', 'GradientClipping', 'ShowGraph', 'ClassificationInterpretation', 'fit_one_cycle', 'lr_find',
            'one_cycle_scheduler', 'to_fp16', 'to_fp32', 'mixup', 'AccumulateScheduler']
 
 def one_cycle_scheduler(lr_max:float, **kwargs:Any)->OneCycleScheduler:
@@ -37,7 +37,7 @@ def to_fp16(learn:Learner, loss_scale:float=None, max_noskip:int=1000, dynamic:b
     learn.to_fp32()
     learn.model = model2half(learn.model)
     learn.data.add_tfm(batch_to_half)
-    learn.mp_cb = MixedPrecision(learn, loss_scale=loss_scale, max_noskip=max_noskip, dynamic=dynamic, clip=clip, 
+    learn.mp_cb = MixedPrecision(learn, loss_scale=loss_scale, max_noskip=max_noskip, dynamic=dynamic, clip=clip,
                                  flat_master=flat_master, max_scale=max_scale)
     learn.callbacks.append(learn.mp_cb)
     return learn
@@ -45,7 +45,7 @@ def to_fp16(learn:Learner, loss_scale:float=None, max_noskip:int=1000, dynamic:b
 def to_fp32(learn:Learner):
     "Put `learn` back to FP32 precision mode."
     learn.data.remove_tfm(batch_to_half)
-    for cb in learn.callbacks: 
+    for cb in learn.callbacks:
         if isinstance(cb, MixedPrecision): learn.callbacks.remove(cb)
     learn.model = learn.model.float()
     return learn
@@ -95,28 +95,28 @@ def clip_grad(learn:Learner, clip:float=0.1)->Learner:
     learn.callback_fns.append(partial(GradientClipping, clip=clip))
     return learn
 Learner.clip_grad = clip_grad
-     
+
 class AccumulateScheduler(LearnerCallback):
     "Does accumlated step every nth step by accumulating gradients"
-    
+
     def __init__(self, learn:Learner, n_step:int = 1, drop_last:bool = False):
         super().__init__(learn)
         self.n_step,self.drop_last = n_step,drop_last
- 
+
     def on_train_begin(self, **kwargs):
         "check if loss is reduction"
         if hasattr(self.loss_func, "reduction") and (self.loss_func.reduction != "sum"):
              warn("For better gradients consider 'reduction=sum'")
-        
+
     def on_epoch_begin(self, **kwargs):
         "init samples and batches, change optimizer"
-        self.acc_samples, self.acc_batches = 0., 0. 
-        
+        self.acc_samples, self.acc_batches = 0., 0.
+
     def on_batch_begin(self, last_input, last_target, **kwargs):
         "accumulate samples and batches"
         self.acc_samples += last_input.shape[0]
         self.acc_batches += 1
-        
+
     def on_backward_end(self, **kwargs):
         "accumulated step and reset samples, True will result in no stepping"
         if (self.acc_batches % self.n_step) == 0:
@@ -124,7 +124,7 @@ class AccumulateScheduler(LearnerCallback):
                 if p.requires_grad: p.grad.div_(self.acc_samples)
             self.acc_samples = 0
         else: return {'skip_step':True, 'skip_zero':True}
-    
+
     def on_epoch_end(self, **kwargs):
         "step the rest of the accumulated grads if not perfectly divisible"
         for p in (self.learn.model.parameters()):
@@ -138,7 +138,7 @@ class ClassificationInterpretation():
     def __init__(self, learn:Learner, probs:Tensor, y_true:Tensor, losses:Tensor, ds_type:DatasetType=DatasetType.Valid):
         self.data,self.probs,self.y_true,self.losses,self.ds_type, self.learn= learn.data,probs,y_true,losses,ds_type,learn
         self.pred_class = self.probs.argmax(dim=1)
-        
+
 
     @classmethod
     def from_learner(cls, learn: Learner,  ds_type:DatasetType=DatasetType.Valid):
@@ -190,7 +190,7 @@ class ClassificationInterpretation():
         res = [(self.data.classes[i],self.data.classes[j],cm[i,j])
                 for i,j in zip(*np.where(cm>=min_val))]
         return sorted(res, key=itemgetter(2), reverse=True)
-    
+
     def top_losses(self, k:int=None, largest=True):
         "`k` largest(/smallest) losses and indexes, defaulting to all losses (sorted by `largest`)."
         return self.losses.topk(ifnone(k, len(self.losses)), largest=largest)

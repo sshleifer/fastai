@@ -17,12 +17,13 @@ python train_imagenette.py --epochs 1 --bs 128 --lr 3e-3 --mixup 0 --size 128
 
 ## Run
 
-Edit params.txt
 
 ```
-python main.py
+python fastai/imagito/train_imagito.py [args..]
 ```
+any kwarg to the `main` func can be passed through the command line
 
+or edit the param grid in 
 
 ## Dev on GCloud
 
