@@ -21,6 +21,34 @@ pg2 = update_batch_size(ParameterGrid({
     'fp16': [True],
     'epochs': [10,]
 }))
+
+params_jeremy = [{
+     'lr': 3e-3,
+     'bs': 64,
+     'size': 128,
+     'fp16': True,
+     'epochs': 5
+ }, {
+     'lr': 1e-2,
+     'bs': 64,
+     'size': 192,
+     'fp16': False,
+     'epochs': 5
+ }, {
+     'lr': 1e-2,
+     'bs': 64,
+     'size': 256,
+     'fp16': False,
+     'epochs': 5
+ }, {
+    'lr': 3e-3,
+    'bs': 128,
+    'size': 128,
+    'fp16': False,
+    'epochs': 20
+}]
+
+
 def run_many(pg):
 
     for pars in tqdm_nice(pg):
@@ -28,5 +56,6 @@ def run_many(pg):
 
 
 if __name__ == '__main__':
-    run_many(pg)
-    run_many(pg2)
+    run_many(params_jeremy)
+    # run_many(pg)
+    # run_many(pg2)
