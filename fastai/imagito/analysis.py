@@ -7,11 +7,11 @@ from fastai.imagito.nb_utils import *
 
 all_data_strat = '0-10-1.0'
 STRAT = 'sampling_strat'
-def run_grouped_regs(max_acc, FEAT = 'z_acc'):
-    targ = max_acc[max_acc[STRAT] == all_data_strat].set_index('size')[FEAT]
+def run_grouped_regs(max_acc, compare_col ='z_acc', algo_chg_col='size'):
+    targ = max_acc[max_acc[STRAT] == all_data_strat].set_index(algo_chg_col)[compare_col]
     def run_reg(grp):
-        xydf = grp.set_index('size')[[FEAT]].assign(y=targ)
-        fnames, targ_name = [FEAT], 'y'
+        xydf = grp.set_index(algo_chg_col)[[compare_col]].assign(y=targ)
+        fnames, targ_name = [compare_col], 'y'
         clf = LassoCV(cv=3)
         clf.fit(xydf[fnames], xydf[targ_name])
         coefs = zip_to_series(fnames, clf.coef_)

@@ -4,25 +4,27 @@ from fastai.imagito.utils import tqdm_nice, update_batch_size
 from fastai.imagito.send_sms import try_send_sms
 
 
+# pg = update_batch_size(ParameterGrid({
+#     # 'lr': lr,
+#     'bs': [256],
+#     'size': [32, 64, 128, 256],
+#     'sample': [1., .5, .25],
+#     'classes': [None, [0,1,2,3,4]],
+#     'fp16': [True],
+#     'epochs': [20,]
+# }))[11:]
+
 pg = update_batch_size(ParameterGrid({
     # 'lr': lr,
+    'lr': [1e-4, 1e-3, 3e-3, 1e-2, 1e-1],
+    'size': [128, 256],
     'bs': [256],
-    'size': [32, 64, 128, 256],
     'sample': [1., .5, .25],
     'classes': [None, [0,1,2,3,4]],
     'fp16': [True],
     'epochs': [20,]
-}))[11:]
-
-pg2 = update_batch_size(ParameterGrid({
-    # 'lr': lr,
-    'bs': [256],
-    'size': [32, 64, 128, 256],
-    'sample': [1.],
-    'classes': [[5,6,7,8,9],],
-    'fp16': [True],
-    'epochs': [20,]
 }))
+
 def run_many(pg):
     try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
     failures = []
@@ -36,4 +38,3 @@ def run_many(pg):
 
 if __name__ == '__main__':
     run_many(pg)
-    run_many(pg2)
