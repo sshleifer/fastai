@@ -1,4 +1,5 @@
 .bundle/
+fastai/imagito/*.ipynb
 courses/dl2
 *.bak
 *.log
