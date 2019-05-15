@@ -16,15 +16,27 @@ from fastai.imagito.send_sms import try_send_sms
 
 pg = update_batch_size(ParameterGrid({
     # 'lr': lr,
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, 1e-1],
-    'size': [128, 256],
+    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
+    'size': [128],
     'bs': [256],
-    'sample': [1., .5, .25],
-    'classes': [None, [0,1,2,3,4]],
+    'sample': [1., .5],
+    'classes': [None, [0,1,2,3,4], [0,1]],
     'fp16': [True],
     'epochs': [20,]
 }))
 
+pg2 = update_batch_size(ParameterGrid({
+    # 'lr': lr,
+    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
+    'size': [256],
+    'bs': [256],
+    'sample': [1., .7, .5],
+    'classes': [None, [0,1,2,3,4], [0,1]],
+    'fp16': [True],
+    'epochs': [20,]
+}))
+
+PGS = [pg, pg2]
 def run_many(pg):
     try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
     failures = []
@@ -36,5 +48,7 @@ def run_many(pg):
             print(e)
     try_send_sms(f'Finished experiments: failures: {failures}')
 
+
 if __name__ == '__main__':
-    run_many(pg)
+    for pgrid in PGS:
+        run_many(pgrid)
