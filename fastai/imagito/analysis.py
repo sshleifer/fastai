@@ -8,6 +8,9 @@ from fastai.imagito.utils import *
 
 all_data_strat = '0-10-1.0'
 STRAT = 'sampling_strat'
+def tryfloat(x):
+    try: return x.astype(float)
+    except Exception: return x
 def run_grouped_regs(max_acc, compare_col ='z_acc', algo_chg_col='size'):
     targ = max_acc[max_acc[STRAT] == all_data_strat].set_index(algo_chg_col)[compare_col]
     def run_reg(grp):
