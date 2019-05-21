@@ -16,24 +16,21 @@ from fastai.imagito.send_sms import try_send_sms
 
 pg = update_batch_size(ParameterGrid({
     # 'lr': lr,
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
+    #'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
+    'label_smoothing': [True, False],
     'size': [128],
     'bs': [256],
-    'sample': [1., .5],
+    'sample': [1., .5, .1],
     'classes': [None, [0,1,2,3,4], [0,1]],
-    'fp16': [True],
-    'epochs': [20,]
 }))
 
 pg2 = update_batch_size(ParameterGrid({
     # 'lr': lr,
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
-    'size': [256],
+    'arch': ['xresnet34', 'xresnet50', 'presnet34', 'presnet50'],
+    'size': [128],
     'bs': [256],
-    'sample': [1., .7, .5],
+    'sample': [1., .5, .1],
     'classes': [None, [0,1,2,3,4], [0,1]],
-    'fp16': [True],
-    'epochs': [20,]
 }))
 
 PGS = [pg, pg2]

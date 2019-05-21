@@ -74,13 +74,13 @@ def main(
         alpha: Param("Alpha", float)=0.99,
         mom: Param("Momentum", float)=0.9,
         eps: Param("epsilon", float)=1e-6,
-        epochs: Param("Number of epochs", int)=5,
+        epochs: Param("Number of epochs", int)=20,
         bs: Param("Batch size", int)=256,
         mixup: Param("Mixup", float)=0.,
         opt: Param("Optimizer (adam,rms,sgd)", str)='adam',
         arch: Param("Architecture (xresnet34, xresnet50, presnet34, presnet50, None)", str)=None,
         dump: Param("Print model; don't train", int)=0,
-        fp16=False,
+        fp16=True,
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
         label_smoothing=False,
@@ -100,6 +100,7 @@ def main(
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
+
     m = xresnet50_2 if arch is None else globals()[arch]
     # NOTE(SS): globals()[arch] raised KeyError
 
@@ -127,8 +128,9 @@ def main(
     # save results to a file like 2019-05-12_22:10/metrics.csv
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
+    es_callback = EarlyStoppingCallback(learn)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
-                        callbacks=[csv_logger])
+                        callbacks=[csv_logger, es_callback])
     if save:
         learn.save('final_classif')
     learn.destroy()
