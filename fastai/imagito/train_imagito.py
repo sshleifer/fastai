@@ -128,7 +128,7 @@ def main(
     # save results to a file like 2019-05-12_22:10/metrics.csv
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
-    es_callback = EarlyStoppingCallback(learn)
+    es_callback = EarlyStoppingCallback(learn, patience=5)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
                         callbacks=[csv_logger, es_callback])
     if save:
