@@ -83,6 +83,7 @@ def main(
         fp16=False,
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
+        label_smoothing=False,
         save=False,
         ):
     "Distributed training of Imagenette."
@@ -109,11 +110,12 @@ def main(
     model_dir.mkdir(exist_ok=False)
     pickle_save(params_dict, model_dir/'params.pkl')
     n_classes = len(classes) if classes is not None else 10
+    loss_func = LabelSmoothingCrossEntropy() if label_smoothing else nn.CrossEntropyLoss()
     learn = Learner(data, m(c_out=n_classes), wd=1e-2, opt_func=opt_func,
                     path=model_dir,
                     metrics=[accuracy],
                     bn_wd=False, true_wd=True,
-                    loss_func=LabelSmoothingCrossEntropy())
+                    loss_func=loss_func)
 
 
     if dump: print(learn.model); exit()
