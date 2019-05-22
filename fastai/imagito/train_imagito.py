@@ -1,7 +1,6 @@
 from fastai.script import *
 from fastai.vision import *
 from fastai.vision.models.xresnet2 import xresnet50_2
-from fastai.vision.models.xresnet import xresnet50
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
@@ -24,7 +23,7 @@ def filter_classes(image_list, classes=None):
 
     return image_list.filter_by_func(class_filter)
 
-def get_data(size, woof, bs, sample, classes=None, workers=None):
+def get_data(size, woof, bs, sample=1., classes=None, workers=None):
     if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
     elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
     else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
@@ -43,6 +42,7 @@ def get_data(size, woof, bs, sample, classes=None, workers=None):
             .databunch(bs=bs, num_workers=workers)
             .presize(size, scale=(0.35,1))
             .normalize(imagenet_stats))
+
 
 def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
                    arch, dump, sample, classes=None):
