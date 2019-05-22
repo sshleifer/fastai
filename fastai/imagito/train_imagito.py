@@ -88,6 +88,8 @@ def main(
         ):
     "Distributed training of Imagenette."
     params_dict = locals()
+    data = get_data(size, woof, bs, sample, classes)
+    import ipdb; ipdb.set_trace()
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
@@ -95,7 +97,7 @@ def main(
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
     if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
 
-    data = get_data(size, woof, bs, sample, classes)
+
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')

@@ -11,6 +11,8 @@ from fastai.vision.models.presnet import *
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
 
+#from dataset_distillation.dataset
+
 def get_data(size, woof, bs, workers=None):
     if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
     elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
@@ -43,14 +45,13 @@ def main(
         dump: Param("Print model; don't train", int)=0,
         ):
     "Distributed training of Imagenette."
-
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
     elif opt=='rms'  : opt_func = partial(optim.RMSprop, alpha=alpha, eps=eps)
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
 
-    data = get_data(size, woof, bs)
+
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
