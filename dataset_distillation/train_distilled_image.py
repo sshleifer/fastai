@@ -197,12 +197,12 @@ class Trainer(object):
         device = state.device
         train_iter = iter(state.train_loader)
         for epoch in range(state.epochs):
-            niter = len(train_iter)
-            prefetch_it = max(0, niter - 2)
+            # niter = train_iter.dataset// state.batch_size  # HACK for fastai
+            # prefetch_it = max(0, niter - 2)
             for it, val in enumerate(train_iter):
                 # Prefetch (start workers) at the end of epoch BEFORE yielding
-                if it == prefetch_it and epoch < state.epochs - 1:
-                    train_iter = iter(state.train_loader)
+                # if it == prefetch_it and epoch < state.epochs - 1:
+                #     train_iter = iter(state.train_loader)
                 yield epoch, it, val
 
     def train(self):

@@ -2,7 +2,7 @@ from torchvision import datasets, transforms
 from PIL import Image
 from .usps import USPS
 from . import caltech_ucsd_birds
-from . import imagenette
+from . import distill_imagenette
 from . import pascal_voc
 import os
 import contextlib
@@ -60,7 +60,7 @@ dataset_stats = dict(
     Cifar10=DatasetStats(3, 32, 10),
     CUB200=DatasetStats(3, 224, 200),
     PASCAL_VOC=DatasetStats(3, 224, 20),
-    Imagenette=DatasetStats(3, 128, 10),
+    Imagenette=DatasetStats(3, 224, 10),
 )
 
 assert(set(default_dataset_roots.keys()) == set(dataset_normalization.keys()) ==
@@ -159,7 +159,10 @@ def get_dataset(state, phase):
     elif name == 'Imagenette':
         # let fastai handle all transforms
         # with suppress_stdout():
-        return imagenette.get_imagenette_train_ds()  # are we concerned about phase=val but no transforms?
+        state.opt.train_loader = distill_imagenette.get_train_loader(state)
+        state.opt.test_loader = distill_imagenette.get_test_loader(state)
+
+        return distill_imagenette.get_imagenette_train_ds()  # are we concerned about phase=val but no transforms?
     elif name == 'CUB200':
         transform_list = []
         if phase == 'train':

@@ -523,14 +523,18 @@ class BaseOptions(object):
         if state.world_rank != 0:
             train_dataset = datasets.get_dataset(state, 'train')
             test_dataset = datasets.get_dataset(state, 'test')
+        if state.dataset == 'Imagenette':
+            assert hasattr(state.opt, 'train_loader')
+            assert hasattr(state.opt, 'test_loader')
 
-        state.opt.train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=state.batch_size,
-            num_workers=state.num_workers, pin_memory=True, shuffle=True)
+        else:
+            state.opt.train_loader = torch.utils.data.DataLoader(
+                train_dataset, batch_size=state.batch_size,
+                num_workers=state.num_workers, pin_memory=True, shuffle=True)
 
-        state.opt.test_loader = torch.utils.data.DataLoader(
-            test_dataset, batch_size=state.test_batch_size,
-            num_workers=state.num_workers, pin_memory=True, shuffle=True)
+            state.opt.test_loader = torch.utils.data.DataLoader(
+                test_dataset, batch_size=state.test_batch_size,
+                num_workers=state.num_workers, pin_memory=True, shuffle=True)
 
         if not dummy:
             logging.info('train dataset size:\t{}'.format(len(train_dataset)))

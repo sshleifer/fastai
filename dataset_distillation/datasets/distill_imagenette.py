@@ -22,3 +22,10 @@ def get_imagenette_train_ds():
 
 def get_imagewoof_train_ds():
     return get_data(size=224, woof=True, bs=64, sample=1., classes=None, workers=None).train_ds
+
+
+def get_train_loader(state):
+    imagelist = get_data(size=224, woof=False, bs=state.batch_size, sample=1., classes=None, workers=None)
+    return imagelist.train_dl
+
+def get_test_loader(state): return get_train_loader(state)
