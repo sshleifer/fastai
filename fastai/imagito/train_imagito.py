@@ -1,6 +1,7 @@
 from fastai.script import *
 from fastai.vision import *
 from fastai.vision.models.xresnet2 import xresnet50_2
+from fastai.vision.models.xresnet import xresnet50
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
@@ -23,7 +24,7 @@ def filter_classes(image_list, classes=None):
 
     return image_list.filter_by_func(class_filter)
 
-def get_data(size, woof, bs, sample=1., classes=None, workers=None):
+def get_data(size, woof, bs, sample, classes=None, workers=None):
     if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
     elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
     else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
@@ -42,7 +43,6 @@ def get_data(size, woof, bs, sample=1., classes=None, workers=None):
             .databunch(bs=bs, num_workers=workers)
             .presize(size, scale=(0.35,1))
             .normalize(imagenet_stats))
-
 
 def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
                    arch, dump, sample, classes=None):
@@ -88,8 +88,6 @@ def main(
         ):
     "Distributed training of Imagenette."
     params_dict = locals()
-    data = get_data(size, woof, bs, sample, classes)
-    import ipdb; ipdb.set_trace()
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
@@ -97,7 +95,7 @@ def main(
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
     if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
 
-
+    data = get_data(size, woof, bs, sample, classes)
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')

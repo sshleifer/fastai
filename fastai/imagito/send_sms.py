@@ -20,8 +20,8 @@ def send_sms(
 def try_send_sms(*args, **kwargs):
     try:
         send_sms(*args, **kwargs)
-    except Exception as e:
-        print(e)
+    except Exception:
+        pass
 
 if __name__ == '__main__':
     send_sms('testing from command line')
