@@ -3,6 +3,7 @@ from PIL import Image
 from .usps import USPS
 from . import caltech_ucsd_birds
 from . import distill_imagenette
+from .imagenet import ImageNet
 from . import pascal_voc
 import os
 import contextlib
@@ -19,9 +20,10 @@ default_dataset_roots = dict(
     Cifar10='./data/cifar10',
     CUB200='./data/birds',
     PASCAL_VOC='./data/pascal_voc',
-    Imagenette='./data/imagenette'
+    Imagenette='./data/imagenette',
+    I2='~/.fastai/data/imagenette-160'
 )
-
+imagenet_stats = ((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
 
 dataset_normalization = dict(
     MNIST=((0.1307,), (0.3081,)),
@@ -33,7 +35,8 @@ dataset_normalization = dict(
     CUB200=((0.47850531339645386, 0.4992702007293701, 0.4022205173969269),
             (0.23210887610912323, 0.2277066558599472, 0.26652416586875916)),
     PASCAL_VOC=((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    Imagenette=((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)), # WRONG but ignored
+    Imagenette=imagenet_stats, # Ignored
+    I2=imagenet_stats,
 )
 
 
@@ -47,6 +50,7 @@ dataset_labels = dict(
     CUB200=caltech_ucsd_birds.class_labels,
     PASCAL_VOC=pascal_voc.object_categories,
     Imagenette=list(range(10)),
+    I2=list(range(10)),
 )
 
 # (nc, real_size, num_classes)
@@ -61,6 +65,7 @@ dataset_stats = dict(
     CUB200=DatasetStats(3, 224, 200),
     PASCAL_VOC=DatasetStats(3, 224, 20),
     Imagenette=DatasetStats(3, distill_imagenette.IM_SIZE, 10),
+    I2=DatasetStats(3, distill_imagenette.IM_SIZE, 10),
 )
 
 assert(set(default_dataset_roots.keys()) == set(dataset_normalization.keys()) ==
@@ -163,6 +168,22 @@ def get_dataset(state, phase):
         state.opt.test_loader = distill_imagenette.get_test_loader(state)
         # are we concerned about phase=val but no transforms?
         return state.opt.train_loader.dataset
+    elif name == 'I2':
+        transform_list = []
+        if phase == 'train':
+            transform_list += [
+                transforms.RandomResizedCrop(input_size, interpolation=Image.BICUBIC),
+                transforms.RandomHorizontalFlip(),
+            ]
+        else:
+            transform_list += [
+                transforms.Resize([input_size, input_size], Image.BICUBIC),
+            ]
+        transform_list += [
+            transforms.ToTensor(),
+            transforms.Normalize(*normalization),
+        ]
+        return ImageNet(root, 'train', transform=transforms.Compose(transform_list))
     elif name == 'CUB200':
         transform_list = []
         if phase == 'train':
