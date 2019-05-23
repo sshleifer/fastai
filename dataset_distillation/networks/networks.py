@@ -115,13 +115,15 @@ import torch
 from torch import nn
 
 
-class DistillableXResNet(utils.ReparamModule):
+class DXResNet50(utils.ReparamModule):
+    """Distillable XResnet50"""
     supported_dims = set(range(32, 1025))
+    block = Bottleneck
+    layers = [3, 4, 23, 3]
+    c_out = 10
 
     def __init__(self, state):
-        block = Bottleneck
-        layers = [3, 4, 23, 3]
-        c_out = 10
+        block, layers, c_out = self.block, self.layers, self.c_out
         self.inplanes = 64
         super().__init__()
         self.conv1 = conv2d(3, 32, 2)
@@ -178,3 +180,9 @@ class DistillableXResNet(utils.ReparamModule):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
+
+
+class DXResNet18(DXResNet50):
+    """Distillable XResnet18"""
+    block = BasicBlock
+    layers = [2, 2, 2, 2]
