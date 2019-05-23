@@ -161,8 +161,8 @@ def get_dataset(state, phase):
         # with suppress_stdout():
         state.opt.train_loader = distill_imagenette.get_train_loader(state)
         state.opt.test_loader = distill_imagenette.get_test_loader(state)
-
-        return distill_imagenette.get_imagenette_train_ds()  # are we concerned about phase=val but no transforms?
+        # are we concerned about phase=val but no transforms?
+        return state.opt.train_loader.dataset
     elif name == 'CUB200':
         transform_list = []
         if phase == 'train':
