@@ -15,17 +15,11 @@ IMAGENETTE_320 = f'{S3_IMAGE}imagenette-320'
 IMAGEWOOF = f'{S3_IMAGE}imagewoof'
 IMAGEWOOF_160 = f'{S3_IMAGE}imagewoof-160'
 IMAGEWOOF_320 = f'{S3_IMAGE}imagewoof-320'
-
-
-def get_imagenette_train_ds():
-    return get_data(size=224, woof=False, bs=64, sample=1., classes=None, workers=None).train_ds
-
-def get_imagewoof_train_ds():
-    return get_data(size=224, woof=True, bs=64, sample=1., classes=None, workers=None).train_ds
+IM_SIZE= 32
 
 
 def get_train_loader(state):
-    imagelist = get_data(size=224, woof=False, bs=state.batch_size, sample=1., classes=None, workers=None)
-    return imagelist.train_dl
+    imagelist = get_data(size=IM_SIZE, woof=False, bs=state.batch_size, sample=1., classes=None, workers=None)
+    return imagelist.train_dl.dl
 
 def get_test_loader(state): return get_train_loader(state)
