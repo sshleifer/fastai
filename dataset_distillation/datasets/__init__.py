@@ -60,7 +60,7 @@ dataset_stats = dict(
     Cifar10=DatasetStats(3, 32, 10),
     CUB200=DatasetStats(3, 224, 200),
     PASCAL_VOC=DatasetStats(3, 224, 20),
-    Imagenette=DatasetStats(3, 224, 10),
+    Imagenette=DatasetStats(3, distill_imagenette.IM_SIZE, 10),
 )
 
 assert(set(default_dataset_roots.keys()) == set(dataset_normalization.keys()) ==

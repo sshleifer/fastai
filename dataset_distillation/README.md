@@ -53,7 +53,8 @@ The distilled images can be optimized either for a  fixed initialization or rand
 
 #### Random unknown initialization
 
-The default options are designed for random initializations. In each training iteration, new initial weights are sampled and trained. Such trained distilled images can be generally applied to unseen initial weights, provided that the weights come from the same initialization distribution.
+The default options are designed for random initializations.
+In each training iteration, new initial weights are sampled and trained. Such trained distilled images can be generally applied to unseen initial weights, provided that the weights come from the same initialization distribution.
 
 + `MNIST`:
 
