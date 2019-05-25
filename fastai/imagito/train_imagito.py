@@ -11,38 +11,38 @@ from fastai.imagito.classes import ClassFolders
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
 
-def filter_classes(image_list, classes=None):
-    if (classes is None):
-        return image_list
-
-    class_names = ClassFolders.from_indices(classes)
-    def class_filter(path):
-        for class_name in class_names:
-            if class_name in str(path):
-                return True
-        return False
-
-    return image_list.filter_by_func(class_filter)
-
-def get_data(size, woof, bs, sample, classes=None, workers=None):
-    if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
-    elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
-    else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
-    path = untar_data(path)
-
-    n_gpus = num_distrib() or 1
-    if workers is None: workers = min(8, num_cpus()//n_gpus)
-
-    image_list = ImageList.from_folder(path)
-    image_list = filter_classes(image_list, classes)
-
-    return (image_list
-            .use_partial_data(sample)
-            .split_by_folder(valid='val')
-            .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
-            .databunch(bs=bs, num_workers=workers)
-            .presize(size, scale=(0.35,1))
-            .normalize(imagenet_stats))
+# def filter_classes(image_list, classes=None):
+#     if (classes is None):
+#         return image_list
+#
+#     class_names = ClassFolders.from_indices(classes)
+#     def class_filter(path):
+#         for class_name in class_names:
+#             if class_name in str(path):
+#                 return True
+#         return False
+#
+#     return image_list.filter_by_func(class_filter)
+#
+# def get_data(size, woof, bs, sample, classes=None, workers=None):
+#     if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
+#     elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
+#     else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
+#     path = untar_data(path)
+#
+#     n_gpus = num_distrib() or 1
+#     if workers is None: workers = min(8, num_cpus()//n_gpus)
+#
+#     image_list = ImageList.from_folder(path)
+#     image_list = filter_classes(image_list, classes)
+#
+#     return (image_list
+#             .use_partial_data(sample)
+#             .split_by_folder(valid='val')
+#             .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
+#             .databunch(bs=bs, num_workers=workers)
+#             .presize(size, scale=(0.35,1))
+#             .normalize(imagenet_stats))
 
 def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
                    arch, dump, sample, classes=None):
