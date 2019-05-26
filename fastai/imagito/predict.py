@@ -27,7 +27,6 @@ def predict_and_save(model, model_dir, ds_type):
     torch.save(targets, model_dir + '/' + prefix + '_targets.pt')
     torch.save(loss, model_dir + '/' + prefix + '_loss.pt')
 
-
 def main():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('saved_model', help='directory containing saved model')
