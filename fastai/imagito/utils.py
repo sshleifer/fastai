@@ -103,7 +103,7 @@ def save_distilled_images_for_fastai(results_pth, save_dir, map_location=None):
     i = 0
     for a,b, _ in triples_lst:
         for img,label in zip(a,b):
-            label_code  = IMAGENETTE_RENAMER[label]
+            label_code  = IMAGENETTE_RENAMER[label.item()]
             save_path = save_dir / f'train/{label_code}/{i}.jpg'
             save_path.parent.mkdir(exist_ok=True, parents=True)
             save_image(img, save_path)

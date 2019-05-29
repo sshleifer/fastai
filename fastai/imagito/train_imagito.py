@@ -87,8 +87,9 @@ def main(
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
-
-    m = xresnet50_2 if arch is None else globals()[arch]
+    if not isinstance(arch, nn.Module):
+        m = xresnet50_2 if arch is None else globals()[arch]
+    else: m = arch
     # NOTE(SS): globals()[arch] raised KeyError
 
     # save params to file like experiments/2019-05-12_22:10/params.pkl
@@ -115,9 +116,9 @@ def main(
     # save results to a file like 2019-05-12_22:10/metrics.csv
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
-    es_callback = EarlyStoppingCallback(learn)
+    #es_callback = EarlyStoppingCallback(learn)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
-                        callbacks=[csv_logger, es_callback])
+                        callbacks=[csv_logger])
     if save:
         learn.save('final_classif')
     learn.destroy()
