@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Iterable
 
 import funcy
@@ -9,8 +10,11 @@ import time
 import pickle
 import gzip
 
+import torch
+from torchvision.utils import save_image
+
 from fastai.core import num_cpus
-from fastai.imagito.classes import ClassFolders
+from fastai.imagito.classes import ClassFolders, IMAGENETTE_RENAMER
 from fastai.torch_core import num_distrib
 from fastai.vision import ImageList, flip_lr, imagenet_stats
 
@@ -89,3 +93,18 @@ def filter_classes(image_list, classes=None):
         return False
 
     return image_list.filter_by_func(class_filter)
+
+
+def save_distilled_images_for_fastai(results_pth, save_dir, map_location=None):
+    save_dir = Path(save_dir)
+    assert 'train' not in str(save_dir), f'this will add train/ for you, got {save_dir}'
+    save_dir.mkdir(exist_ok=True)
+    triples_lst = torch.load(results_pth, map_location)
+    i = 0
+    for a,b, _ in triples_lst:
+        for img,label in zip(a,b):
+            label_code  = IMAGENETTE_RENAMER[label]
+            save_path = save_dir / f'train/{label_code}/{i}.jpg'
+            save_path.parent.mkdir(exist_ok=True, parents=True)
+            save_image(img, save_path)
+            i += 1

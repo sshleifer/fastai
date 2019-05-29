@@ -25,3 +25,8 @@ class ClassFolders:
             else:
                 classes.append(ClassFolders.imagenette[i])
         return classes
+
+
+from fastai.imagito.classes import ClassFolders
+
+IMAGENETTE_RENAMER = dict(enumerate(ClassFolders.imagenette))
