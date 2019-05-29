@@ -44,7 +44,7 @@ def update_batch_size(pg):
     return new_pars
 
 def filter_classes(image_list, classes=None):
-    if (classes is None):
+    if classes is None:
         return image_list
 
     class_names = ClassFolders.from_indices(classes)
@@ -75,6 +75,9 @@ def get_data(size, woof, bs, sample, classes=None, workers=None):
             .databunch(bs=bs, num_workers=workers)
             .presize(size, scale=(0.35,1))
             .normalize(imagenet_stats))
+
+def assertIsPerc(val):
+    assert 0 <= val <= 1
 
 from tqdm import *
 from ipykernel.kernelapp import IPKernelApp

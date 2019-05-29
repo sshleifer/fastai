@@ -75,7 +75,7 @@ def proxy_dist(sample, hardness, total_hard, targets):
     if hardness < dataset_hardness:
         print('Warning: Desired hardness=%f less than full dataset hardness=%f' % (hardness, dataset_hardness))
     else:
-        print('Sampling using hardness=%f. Original dataset hardness=%f' % (hardness, dataset_hardness))
+        print('Sampling using hardness=%f. Original dataset hardness=%f (ignore for loss-based)' % (hardness, dataset_hardness))
 
     if num_easy > total_easy:
         # not enough "easy" examples
@@ -86,7 +86,6 @@ def proxy_dist(sample, hardness, total_hard, targets):
     return proxy_size, num_hard
 
 def sample_loss_based(ll:LabelList, sample, hardness, preds, targets, loss):
-    breakpoint()
     assertIsPerc(sample)
     assertIsPerc(hardness)
 
@@ -124,14 +123,14 @@ def sample_with_hardness(sample, hardness, hardness_type, model_dir):
     assert(hardness_type == 'loss' or hardness_type == 'correctness')
 
     model, data = load_model(model_dir)
-    # predictions_t, targets_t, loss_t = model.get_preds(ds_type=DatasetType.Train, with_loss=True)
+    predictions_t, targets_t, loss_t = model.get_preds(ds_type=DatasetType.Train, with_loss=True)
     predictions_v, targets_v, loss_v = model.get_preds(ds_type=DatasetType.Valid, with_loss=True)
 
     if hardness_type == 'loss':
-        # sample_loss_based(data.train_ds, sample, hardness, predictions_t, targets_t, loss_t)
+        sample_loss_based(data.train_ds, sample, hardness, predictions_t, targets_t, loss_t)
         sample_loss_based(data.valid_ds, sample, hardness, predictions_v, targets_v, loss_v)
     else:
-        # sample_correctness_based(data.train_ds, sample, hardness, predictions_t, targets_t)
+        sample_correctness_based(data.train_ds, sample, hardness, predictions_t, targets_t)
         sample_correctness_based(data.valid_ds, sample, hardness, predictions_v, targets_v)
     return data
 
@@ -146,7 +145,6 @@ def main():
     hardness_type = 'loss'
 
     data = sample_with_hardness(sample, hardness, hardness_type, model_dir)
-    breakpoint()
 
 if __name__ == '__main__':
     main()

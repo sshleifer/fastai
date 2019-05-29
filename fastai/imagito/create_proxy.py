@@ -9,6 +9,7 @@ def grade_examples(model_dir, ds_type):
     preds = torch.load(model_dir + '/' + prefix + '_predictions.pt')
     targets = torch.load(model_dir + '/' + prefix + '_targets.pt')
 
+
     # loss = torch.load(model_dir + '/' + prefix + '_loss.pt')
 
     # contains 0 if that example is 'hard', 1 if the example if 'easy'
@@ -23,7 +24,7 @@ def main():
     args = parser.parse_args()
 
     model_dir = args.results_dir
-    grade_examples(model_dir, DatasetType.Train)
+    # grade_examples(model_dir, DatasetType.Train)
     grade_examples(model_dir, DatasetType.Valid)
 
 if __name__ == '__main__':
