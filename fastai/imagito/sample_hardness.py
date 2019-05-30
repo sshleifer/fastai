@@ -124,7 +124,10 @@ IMAGENETTE_SIZE = 12894
 def sample_hard_from_disk(size, woof, bs, sample):
     if sample == 1: raise ValueError(f'pointless to sample=100% hardest images')
     easy_tr_paths = get_n_easiest(int(sample * IMAGENETTE_SIZE))
-    data = get_data(size, woof, bs, 1., shuffle_train=True, filter_func=lambda x: str(x) not in easy_tr_paths)
+    easy_tr_paths = {os.path.basename(x) for x in easy_tr_paths}
+    data = get_data(size, woof, bs, 1., shuffle_train=True,
+                    filter_func=lambda x: str(os.path.basename(x)) not in easy_tr_paths)
+    print(len(data.train_dl.dataset))
     return data
 
 
