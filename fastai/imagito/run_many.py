@@ -19,18 +19,12 @@ pg = update_batch_size(ParameterGrid({
     'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
     'label_smoothing': [False],
     'size': [128],
+    'epochs': [10],
     'bs': [256],
-    'sample': [1., .7],
-}))
-pg2 = update_batch_size(ParameterGrid({
-    # 'lr': lr,
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
-    'label_smoothing': [True],
-    'size': [128],
-    'bs': [256],
-    'sample': [.7],
+    'sample': [1.],
 }))
 
+pg2 = []
 
 PGS = [pg, pg2]
 def run_many(pg):
