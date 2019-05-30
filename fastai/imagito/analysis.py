@@ -22,8 +22,8 @@ def tryfloat(x):
 
 DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr',]
 ALL_DATA_STRAT = 'All Classes-1.0'
-pd.DataFrame.e19 = property(lambda df: df[df.epoch==19])
-
+pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
+pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
 
 def drop_zero_variance_cols(df):
     keep_col_mask = df.apply(lambda x: x.nunique()) > 1
