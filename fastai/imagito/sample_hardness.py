@@ -117,7 +117,7 @@ def sample_with_hardness(size, woof, bs, sample, hardness_params):
 import pandas as pd
 
 def get_n_easiest(n):
-    df = pd.read_msgpack('pred_df.mp')
+    df = pd.read_msgpack('pred_df.mp').sort_values('loss', ascending=False)
     return set(df.tail(IMAGENETTE_SIZE - n).paths.values)
 
 IMAGENETTE_SIZE = 12894
