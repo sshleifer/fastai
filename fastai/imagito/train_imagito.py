@@ -6,7 +6,8 @@ from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
 from fastai.imagito.utils import *
-from fastai.imagito.classes import ClassFolders
+from fastai.imagito.classes import ClassUtils
+from fastai.imagito.sample_hardness import *
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
@@ -50,6 +51,9 @@ def main(
         fp16=True,
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
+        hardness: Param("Percentage of proxy to be composed of 'hard' examples, as defined by hardness_type", float)=None,
+        hardness_type: Param("How to define an example as hard. Either 'correctness' or 'loss'", str)="correctness",
+        hardness_model_dir: Param("Directory containing model to load for classifying hardness", str)=None,
         label_smoothing=False,
         save=False,
         ):
@@ -62,7 +66,16 @@ def main(
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
     if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
 
-    data = get_data(size, woof, bs, sample, classes)
+    data = None
+    if hardness is not None:
+        hardness_params = {}
+        hardness_params['hardness'] = hardness
+        hardness_params['hardness_type'] = hardness_type
+        hardness_params['hardness_model_dir'] = hardness_model_dir
+        data = sample_with_hardness(size, woof, bs, sample, hardness_params)
+    else:
+        data = get_data(size, woof, bs, sample, classes)
+
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')

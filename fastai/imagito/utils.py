@@ -11,7 +11,7 @@ import gzip
 
 from fastai.vision import *
 from fastai.imagito.utils import *
-from fastai.imagito.classes import ClassFolders
+from fastai.imagito.classes import ClassUtils
 
 
 def get_date_str(seconds=False):
@@ -43,19 +43,6 @@ def update_batch_size(pg):
         new_pars.append(new_p)
     return new_pars
 
-def filter_classes(image_list, classes=None):
-    if classes is None:
-        return image_list
-
-    class_names = ClassFolders.from_indices(classes)
-    def class_filter(path):
-        for class_name in class_names:
-            if class_name in str(path):
-                return True
-        return False
-
-    return image_list.filter_by_func(class_filter)
-
 def get_data(size, woof, bs, sample, classes=None, workers=None):
     if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
     elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
@@ -66,7 +53,7 @@ def get_data(size, woof, bs, sample, classes=None, workers=None):
     if workers is None: workers = min(8, num_cpus()//n_gpus)
 
     image_list = ImageList.from_folder(path)
-    image_list = filter_classes(image_list, classes)
+    image_list = ClassUtils.filter_classes(image_list, classes)
 
     return (image_list
             .use_partial_data(sample)

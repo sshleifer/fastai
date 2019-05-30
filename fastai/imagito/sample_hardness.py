@@ -8,14 +8,15 @@ from operator import itemgetter
 
 global i
 
-def load_model(model_dir):
+def load_model(model_dir, size, woof, bs, sample):
     model_params = pickle_load(model_dir + '/params.pkl')
+    if model_params['size'] != size:
+        print('Warning: Model was trained on image size=%d but is being used to predict for size=%d'
+              % (model_params['size'], size))
+
     m = xresnet50_2
     print(model_params)
-    data = get_data(model_params['size'],
-             model_params['woof'],
-             model_params['bs'],
-             model_params['sample'])
+    data = get_data(size, woof, bs, sample)
 
     l = Learner(data, m(c_out=10), path=model_dir)
     l.load('final_classif')
@@ -45,7 +46,7 @@ def do_filter(ll:LabelList, mask):
     i = 0
     def mask_filter(img):
         global i
-        keep = bool(mask[i])
+        keep = mask[i]
         i += 1
         return keep
 
@@ -54,7 +55,7 @@ def do_filter(ll:LabelList, mask):
     ll.y.filter_by_func(mask_filter)
     return ll
 
-def proxy_dist(sample, hardness, total_hard, targets):
+def proxy_distr(sample, hardness, total_hard, targets):
     assertIsPerc(sample)
     assertIsPerc(hardness)
 
@@ -90,7 +91,7 @@ def sample_loss_based(ll:LabelList, sample, hardness, preds, targets, loss):
     assertIsPerc(hardness)
 
     total = len(targets)
-    proxy_size, num_hard = proxy_dist(sample, hardness, math.floor(total * sample * hardness), targets)
+    proxy_size, num_hard = proxy_distr(sample, hardness, math.floor(total * sample * hardness), targets)
 
     keyList = sorted(enumerate(loss), key=itemgetter(1), reverse=True) # sort loss from highest to lowest
     hard_idx = [x[0] for x in keyList[:num_hard+1]]
@@ -108,7 +109,7 @@ def sample_correctness_based(ll:LabelList, sample, hardness, preds, targets):
     correct_preds = torch.argmax(preds, dim=1) == targets # 1 if prediction was correct, else 0
     total_hard = (correct_preds == 0).sum()
 
-    proxy_size, num_hard = proxy_dist(sample, hardness, total_hard, targets)
+    proxy_size, num_hard = proxy_distr(sample, hardness, total_hard, targets)
 
     hard_mask = retain_ones(correct_preds == 0, num_hard)
     easy_mask = retain_ones(correct_preds, proxy_size - num_hard)
@@ -119,10 +120,14 @@ def sample_correctness_based(ll:LabelList, sample, hardness, preds, targets):
 
     return do_filter(ll, mask)
 
-def sample_with_hardness(sample, hardness, hardness_type, model_dir):
+def sample_with_hardness(size, woof, bs, sample, hardness_params):
+    hardness = hardness_params['hardness']
+    hardness_type = hardness_params['hardness_type']
+    model_dir = hardness_params['hardness_model_dir']
+
     assert(hardness_type == 'loss' or hardness_type == 'correctness')
 
-    model, data = load_model(model_dir)
+    model, data = load_model(model_dir, size, woof, bs, sample)
     predictions_t, targets_t, loss_t = model.get_preds(ds_type=DatasetType.Train, with_loss=True)
     predictions_v, targets_v, loss_v = model.get_preds(ds_type=DatasetType.Valid, with_loss=True)
 
@@ -133,18 +138,3 @@ def sample_with_hardness(sample, hardness, hardness_type, model_dir):
         sample_correctness_based(data.train_ds, sample, hardness, predictions_t, targets_t)
         sample_correctness_based(data.valid_ds, sample, hardness, predictions_v, targets_v)
     return data
-
-def main():
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('saved_model', help='directory containing saved model')
-    args = parser.parse_args()
-
-    model_dir = args.saved_model
-    hardness = 0.1
-    sample = 0.5
-    hardness_type = 'loss'
-
-    data = sample_with_hardness(sample, hardness, hardness_type, model_dir)
-
-if __name__ == '__main__':
-    main()
