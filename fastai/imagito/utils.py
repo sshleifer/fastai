@@ -9,6 +9,10 @@ import time
 import pickle
 import gzip
 
+from fastai.vision import *
+from fastai.imagito.utils import *
+from fastai.imagito.classes import ClassUtils
+
 
 def get_date_str(seconds=False):
     if seconds:
@@ -38,6 +42,32 @@ def update_batch_size(pg):
             new_p['bs'] = min(new_p['bs'], 128)
         new_pars.append(new_p)
     return new_pars
+
+return_true = lambda x: True
+def get_data(size, woof, bs, sample, classes=None, workers=None, shuffle_train=True, filter_func=return_true):
+    if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
+    elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
+    else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
+    path = untar_data(path)
+
+    n_gpus = num_distrib() or 1
+    if workers is None: workers = min(8, num_cpus()//n_gpus)
+
+    image_list = ImageList.from_folder(path)
+    image_list = ClassUtils.filter_classes(image_list, classes)
+
+    return (image_list
+            .filter_by_func(filter_func)
+            .use_partial_data(sample)
+            .split_by_folder(valid='val')
+
+            .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
+            .databunch(bs=bs, num_workers=workers, shuffle_train=shuffle_train)
+            .presize(size, scale=(0.35,1))
+            .normalize(imagenet_stats))
+
+def assertIsPerc(val):
+    assert 0 <= val <= 1
 
 from tqdm import *
 from ipykernel.kernelapp import IPKernelApp

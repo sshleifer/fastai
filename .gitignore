@@ -142,3 +142,5 @@ docs_src/fastai
 
 # our make release log files
 release-*.log
+
+good_model/models/

@@ -1,4 +1,4 @@
-class ClassFolders:
+class ClassUtils:
     imagenette = [
         'n01440764',
         'n02102040',
@@ -21,7 +21,22 @@ class ClassFolders:
         classes = []
         for i in indices:
             if woof:
-                classes.append(ClassFolders.imagewoof[i])
+                classes.append(ClassUtils.imagewoof[i])
             else:
-                classes.append(ClassFolders.imagenette[i])
+                classes.append(ClassUtils.imagenette[i])
         return classes
+
+    @staticmethod
+    def filter_classes(image_list, classes=None):
+        if classes is None:
+            return image_list
+
+        class_names = ClassUtils.from_indices(classes)
+
+        def class_filter(path):
+            for class_name in class_names:
+                if class_name in str(path):
+                    return True
+            return False
+
+        return image_list.filter_by_func(class_filter)

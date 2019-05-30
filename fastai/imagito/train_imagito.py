@@ -6,43 +6,11 @@ from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
 from fastai.imagito.utils import *
-from fastai.imagito.classes import ClassFolders
+from fastai.imagito.classes import ClassUtils
+from fastai.imagito.sample_hardness import *
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
-
-def filter_classes(image_list, classes=None):
-    if (classes is None):
-        return image_list
-
-    class_names = ClassFolders.from_indices(classes)
-    def class_filter(path):
-        for class_name in class_names:
-            if class_name in str(path):
-                return True
-        return False
-
-    return image_list.filter_by_func(class_filter)
-
-def get_data(size, woof, bs, sample, classes=None, workers=None):
-    if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
-    elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
-    else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
-    path = untar_data(path)
-
-    n_gpus = num_distrib() or 1
-    if workers is None: workers = min(8, num_cpus()//n_gpus)
-
-    image_list = ImageList.from_folder(path)
-    image_list = filter_classes(image_list, classes)
-
-    return (image_list
-            .use_partial_data(sample)
-            .split_by_folder(valid='val')
-            .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
-            .databunch(bs=bs, num_workers=workers)
-            .presize(size, scale=(0.35,1))
-            .normalize(imagenet_stats))
 
 def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
                    arch, dump, sample, classes=None):
@@ -83,6 +51,7 @@ def main(
         fp16=True,
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
+        sample_hard=False,
         label_smoothing=False,
         save=False,
         ):
@@ -95,7 +64,12 @@ def main(
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
     if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
 
-    data = get_data(size, woof, bs, sample, classes)
+    data = None
+    if sample_hard:
+        data = sample_hard_from_disk(size, woof, bs, sample)
+    else:
+        data = get_data(size, woof, bs, sample, classes)
+
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
