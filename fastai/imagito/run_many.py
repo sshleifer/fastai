@@ -39,7 +39,7 @@ pg_hardness = update_batch_size(ParameterGrid({
     'size': [128],
     'bs': [256],
     'sample': [.1, .75, .5, .25],  # top 50%, top25%
-    'do_hard': True,
+    'sample_hard': True,
 }))
 
 PGS = [pg_hardness]

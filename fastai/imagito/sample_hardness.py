@@ -117,12 +117,14 @@ def sample_with_hardness(size, woof, bs, sample, hardness_params):
 import pandas as pd
 
 def get_n_easiest(n):
-    return set(pd.read_msgpack('pred_df.mp').paths.tail(IMAGENETTE_SIZE- n).values)
+    df = pd.read_msgpack('pred_df.mp')
+    return set(df.tail(IMAGENETTE_SIZE - n).paths.values)
 
 IMAGENETTE_SIZE = 12894
 def sample_hard_from_disk(size, woof, bs, sample):
-    easy_tr_paths = get_n_easiest(sample * IMAGENETTE_SIZE)
-    data = get_data(size, woof, bs, sample, shuffle_train=True, filter_func=lambda x: str(x) not in easy_tr_paths)
+    if sample == 1: raise ValueError(f'pointless to sample=100% hardest images')
+    easy_tr_paths = get_n_easiest(int(sample * IMAGENETTE_SIZE))
+    data = get_data(size, woof, bs, 1., shuffle_train=True, filter_func=lambda x: str(x) not in easy_tr_paths)
     return data
 
 

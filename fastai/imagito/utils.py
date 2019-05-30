@@ -57,9 +57,10 @@ def get_data(size, woof, bs, sample, classes=None, workers=None, shuffle_train=T
     image_list = ClassUtils.filter_classes(image_list, classes)
 
     return (image_list
+            .filter_by_func(filter_func)
             .use_partial_data(sample)
             .split_by_folder(valid='val')
-            .filter_by_func(filter_func)
+
             .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
             .databunch(bs=bs, num_workers=workers, shuffle_train=shuffle_train)
             .presize(size, scale=(0.35,1))
