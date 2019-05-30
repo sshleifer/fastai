@@ -107,13 +107,23 @@ def sample_loss_based(ll:LabelList, sample, hardness, preds, targets, loss):
 
 def sample_with_hardness(size, woof, bs, sample, hardness_params):
     hardness = hardness_params['hardness']
-    hardness_type = hardness_params['hardness_type']
     model_dir = hardness_params['hardness_model_dir']
-
-    assert(hardness_type == 'loss' or hardness_type == 'correctness')
-
     model, data = load_model(model_dir, size, woof, bs, sample)
     predictions_t, targets_t, loss_t = model.get_preds(ds_type=DatasetType.Train, with_loss=True)
     sample_loss_based(data.train_ds, sample, hardness, predictions_t, targets_t, loss_t)
-
     return data
+
+
+import pandas as pd
+
+def get_n_easiest(n):
+    return set(pd.read_msgpack('pred_df.mp').paths.tail(IMAGENETTE_SIZE- n).values)
+
+IMAGENETTE_SIZE = 12894
+def sample_hard_from_disk(size, woof, bs, sample):
+    easy_tr_paths = get_n_easiest(sample * IMAGENETTE_SIZE)
+    data = get_data(size, woof, bs, sample, shuffle_train=True, filter_func=lambda x: str(x) not in easy_tr_paths)
+    return data
+
+
+
