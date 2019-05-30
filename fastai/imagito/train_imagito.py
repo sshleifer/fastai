@@ -5,28 +5,14 @@ from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
 from fastai.imagito.utils import *
+
 from fastai.imagito.utils import load_distilled_imagelist, make_imagelist
+
+from fastai.imagito.classes import ClassUtils
+from fastai.imagito.sample_hardness import *
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
-
-
-def get_data(size, woof, bs, sample, classes=None, workers=None):
-    path = get_imagenette_path(size, woof)
-    return make_imagelist(bs, classes, path, sample, size, workers)
-
-
-def get_imagenette_path(size, woof):
-    if size <= 128:
-        path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
-    elif size <= 224:
-        path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
-    else:
-        path = URLs.IMAGEWOOF if woof else URLs.IMAGENETTE
-    path = untar_data(path)
-    return path
-
-
 def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
                    arch, dump, sample, classes=None):
     return {
@@ -67,6 +53,7 @@ def main(
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
         label_smoothing=False,
+        hardness_lower_bound=0., hardness_upper_bound=1.,
         save=False,
         ds_path=None,
         ):
@@ -82,11 +69,16 @@ def main(
         print(f"Using ds_path={ds_path}: ignoring woof, and classes parameters.")
         data = load_distilled_imagelist(ds_path, bs=bs, size=size)
     else:
-        data = get_data(size, woof, bs, sample, classes)
+        filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound)
+        if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
+        data = get_data(size, woof, bs, sample, classes, filter_func=filter_func)
+    params_dict['n_train'] = len(data.train_dl.dataset)
+
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
+
 
     m = xresnet50_2 if arch is None else globals()[arch]
     # NOTE(SS): globals()[arch] raised KeyError
@@ -115,9 +107,8 @@ def main(
     # save results to a file like 2019-05-12_22:10/metrics.csv
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
-    es_callback = EarlyStoppingCallback(learn)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
-                        callbacks=[csv_logger, es_callback])
+                        callbacks=[csv_logger])
     if save:
         learn.save('final_classif')
     learn.destroy()
