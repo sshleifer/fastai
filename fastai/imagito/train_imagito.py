@@ -1,19 +1,18 @@
 from fastai.script import *
-from fastai.vision import *
 from fastai.vision.models.xresnet2 import xresnet50_2
 
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
+from fastai.model_wrappers import *
 from fastai.imagito.utils import *
 from fastai.imagito.sample_hardness import make_hardness_filter_func
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
-from torchvision.models import AlexNet
 
-def alexnet_wrapper(c_out):
-    return AlexNet(n_classes=c_out)
+
+
 
 @call_parse
 def main(
