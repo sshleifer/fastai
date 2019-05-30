@@ -38,8 +38,8 @@ pg_hardness = update_batch_size(ParameterGrid({
     'label_smoothing': [True, False],
     'size': [128],
     'bs': [256],
-    'hardness': [.75, .5, .25, .1],  # top 50%, top25%
-    'hardness_model_dir': ['good_model/']
+    'sample': [.1, .75, .5, .25],  # top 50%, top25%
+    'do_hard': True,
 }))
 
 PGS = [pg_hardness]
