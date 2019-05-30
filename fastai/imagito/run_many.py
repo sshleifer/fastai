@@ -39,7 +39,6 @@ pg_hardness = update_batch_size(ParameterGrid({
     'size': [128],
     'bs': [256],
     'hardness': [.75, .5, .25, .1],  # top 50%, top25%
-    'hardness_type': ['loss'],
     'hardness_model_dir': ['good_model/']
 }))
 

@@ -52,7 +52,6 @@ def main(
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
         hardness: Param("Percentage of proxy to be composed of 'hard' examples, as defined by hardness_type", float)=None,
-        hardness_type: Param("How to define an example as hard. Either 'correctness' or 'loss'", str)="correctness",
         hardness_model_dir: Param("Directory containing model to load for classifying hardness", str)=None,
         label_smoothing=False,
         save=False,
@@ -70,8 +69,8 @@ def main(
     if hardness is not None:
         hardness_params = {}
         hardness_params['hardness'] = hardness
-        hardness_params['hardness_type'] = hardness_type
         hardness_params['hardness_model_dir'] = hardness_model_dir
+        assert Path(hardness_model_dir).exists(), f'{hardness_model_dir}'
         data = sample_with_hardness(size, woof, bs, sample, hardness_params)
     else:
         data = get_data(size, woof, bs, sample, classes)

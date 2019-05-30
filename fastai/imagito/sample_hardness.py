@@ -105,21 +105,6 @@ def sample_loss_based(ll:LabelList, sample, hardness, preds, targets, loss):
 
     return do_filter(ll, mask)
 
-def sample_correctness_based(ll:LabelList, sample, hardness, preds, targets):
-    correct_preds = torch.argmax(preds, dim=1) == targets # 1 if prediction was correct, else 0
-    total_hard = (correct_preds == 0).sum()
-
-    proxy_size, num_hard = proxy_distr(sample, hardness, total_hard, targets)
-
-    hard_mask = retain_ones(correct_preds == 0, num_hard)
-    easy_mask = retain_ones(correct_preds, proxy_size - num_hard)
-    mask = torch.zeros_like(correct_preds) + hard_mask + easy_mask
-
-    assert ((mask > 1).sum() == 0) # should only contain 1s and 0s
-    assert mask.sum() in range(int(proxy_size) - 2, int(proxy_size) + 2) # allow wiggle room for rounding
-
-    return do_filter(ll, mask)
-
 def sample_with_hardness(size, woof, bs, sample, hardness_params):
     hardness = hardness_params['hardness']
     hardness_type = hardness_params['hardness_type']
@@ -129,12 +114,6 @@ def sample_with_hardness(size, woof, bs, sample, hardness_params):
 
     model, data = load_model(model_dir, size, woof, bs, sample)
     predictions_t, targets_t, loss_t = model.get_preds(ds_type=DatasetType.Train, with_loss=True)
-    predictions_v, targets_v, loss_v = model.get_preds(ds_type=DatasetType.Valid, with_loss=True)
+    sample_loss_based(data.train_ds, sample, hardness, predictions_t, targets_t, loss_t)
 
-    if hardness_type == 'loss':
-        sample_loss_based(data.train_ds, sample, hardness, predictions_t, targets_t, loss_t)
-        sample_loss_based(data.valid_ds, sample, hardness, predictions_v, targets_v, loss_v)
-    else:
-        sample_correctness_based(data.train_ds, sample, hardness, predictions_t, targets_t)
-        sample_correctness_based(data.valid_ds, sample, hardness, predictions_v, targets_v)
     return data
