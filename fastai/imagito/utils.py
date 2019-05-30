@@ -43,7 +43,7 @@ def update_batch_size(pg):
         new_pars.append(new_p)
     return new_pars
 
-def get_data(size, woof, bs, sample, classes=None, workers=None):
+def get_data(size, woof, bs, sample, classes=None, workers=None, shuffle_train=True):
     if   size<=128: path = URLs.IMAGEWOOF_160 if woof else URLs.IMAGENETTE_160
     elif size<=224: path = URLs.IMAGEWOOF_320 if woof else URLs.IMAGENETTE_320
     else          : path = URLs.IMAGEWOOF     if woof else URLs.IMAGENETTE
@@ -59,7 +59,7 @@ def get_data(size, woof, bs, sample, classes=None, workers=None):
             .use_partial_data(sample)
             .split_by_folder(valid='val')
             .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
-            .databunch(bs=bs, num_workers=workers)
+            .databunch(bs=bs, num_workers=workers, shuffle_train=shuffle_train)
             .presize(size, scale=(0.35,1))
             .normalize(imagenet_stats))
 

@@ -16,7 +16,7 @@ def load_model(model_dir, size, woof, bs, sample):
 
     m = xresnet50_2
     print(model_params)
-    data = get_data(size, woof, bs, sample)
+    data = get_data(size, woof, bs, sample, shuffle_train=False)
 
     l = Learner(data, m(c_out=10), path=model_dir)
     l.load('final_classif')
