@@ -38,11 +38,17 @@ pg_hardness = update_batch_size(ParameterGrid({
     'label_smoothing': [True, False],
     'size': [128],
     'bs': [256],
-    'sample': [.1, .75, .5, .25],  # top 50%, top25%
-    'sample_hard': [True,]
+    'hardness_upper_bound':[.1, .75, .5, .25],
+}))
+pg_easy = update_batch_size(ParameterGrid({
+    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
+    'label_smoothing': [True, False],
+    'size': [128],
+    'bs': [256],
+    'hardness_lower_bound': [.9, .75, .5, .25],
 }))
 
-PGS = [pg_hardness]
+PGS = [pg_hardness, pg_easy]
 def run_many(pg):
     try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
     failures = []

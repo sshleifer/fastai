@@ -115,20 +115,25 @@ def sample_with_hardness(size, woof, bs, sample, hardness_params):
 
 
 import pandas as pd
-
-def get_n_easiest(n):
-    df = pd.read_msgpack('pred_df.mp').sort_values('loss', ascending=False)
-    return set(df.tail(IMAGENETTE_SIZE - n).paths.values)
-
 IMAGENETTE_SIZE = 12894
-def sample_hard_from_disk(size, woof, bs, sample):
-    if sample == 1: raise ValueError(f'pointless to sample=100% hardest images')
-    easy_tr_paths = get_n_easiest(int(sample * IMAGENETTE_SIZE))
-    easy_tr_paths = {os.path.basename(x) for x in easy_tr_paths}
-    data = get_data(size, woof, bs, 1., shuffle_train=True,
-                    filter_func=lambda x: str(os.path.basename(x)) not in easy_tr_paths)
-    print(len(data.train_dl.dataset))
-    return data
+
+
+def make_hardness_filter_func(hardness_bounds):
+    """
+    > hardness_bounds = (0., .25)  # top 25% hardest
+    > hardness_bounds = (0., 1.) # all
+    > hardness_bounds = (.75, 1.)  # top 25 % easiest
+    """
+    pred_df = pd.read_msgpack('pred_df.mp').sort_values('loss', ascending=False)
+    start_idx, end_idx = int(IMAGENETTE_SIZE * hardness_bounds[0]), int(
+        IMAGENETTE_SIZE * hardness_bounds[1]) - 1
+    pred_df['path'] = pred_df['paths'].apply(os.path.basename)
+    all_paths = set(pred_df['path'].unique())
+    paths_to_keep = pred_df.iloc[start_idx: end_idx].path.unique()
+    paths_to_toss = all_paths.difference(paths_to_keep)
+    filter_func = lambda x: str(os.path.basename(x)) not in paths_to_toss  # ignores val paths
+    return filter_func
+
 
 
 
