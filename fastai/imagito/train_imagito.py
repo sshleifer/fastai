@@ -1,38 +1,15 @@
 from fastai.script import *
 from fastai.vision import *
 from fastai.vision.models.xresnet2 import xresnet50_2
+
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
 from fastai.imagito.utils import *
-
-from fastai.imagito.utils import load_distilled_imagelist, make_imagelist
-
-from fastai.imagito.classes import ClassUtils
-from fastai.imagito.sample_hardness import *
+from fastai.imagito.sample_hardness import make_hardness_filter_func
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
-def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
-                   arch, dump, sample, classes=None):
-    return {
-        'gpu': gpu,
-        'woof': woof,
-        'lr': lr,
-        'size': size,
-        'alpha': alpha,
-        'mom': mom,
-        'eps': eps,
-        'epochs': epochs,
-        'bs': bs,
-        'mixup': mixup,
-        'opt': opt,
-        'arch': arch,
-        'dump': dump,
-        'sample': sample,
-        'classes': classes
-    }
-
 
 @call_parse
 def main(

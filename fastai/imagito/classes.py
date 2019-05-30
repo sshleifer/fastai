@@ -43,3 +43,10 @@ class ClassUtils:
 
 
 IMAGENETTE_RENAMER = dict(enumerate(ClassUtils.imagenette))
+
+
+collection = {}
+{prefix for prefix in (foo.split('.')[0] for foo in collection if '.' in foo) if prefix in collection}
+
+
+{foo.split('.')[0] for foo in collection if '.' in foo and foo.split('.')[0] in collection}

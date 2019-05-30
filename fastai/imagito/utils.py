@@ -15,7 +15,7 @@ import torch
 from torchvision.utils import save_image
 
 from fastai.core import num_cpus
-from fastai.imagito.classes import ClassFolders, IMAGENETTE_RENAMER
+from fastai.imagito.classes import ClassUtils, IMAGENETTE_RENAMER
 from fastai.torch_core import num_distrib
 from fastai.vision import ImageList, flip_lr, imagenet_stats
 
@@ -70,7 +70,6 @@ def get_data(size, woof, bs, sample, classes=None, workers=None, shuffle_train=T
             .filter_by_func(filter_func)
             .use_partial_data(sample)
             .split_by_folder(valid='val')
-
             .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
             .databunch(bs=bs, num_workers=workers, shuffle_train=shuffle_train)
             .presize(size, scale=(0.35,1))
@@ -96,34 +95,6 @@ def load_distilled_imagelist(save_dir, bs=64, size=32):
             .presize(size, scale=(0.35, 1))
             .normalize(imagenet_stats)
             )
-
-
-def make_imagelist(bs, classes, path, sample, size, workers):
-    n_gpus = num_distrib() or 1
-    if workers is None: workers = min(8, num_cpus() // n_gpus)
-    image_list = ImageList.from_folder(path)
-    image_list = filter_classes(image_list, classes)
-    return (image_list
-            .use_partial_data(sample)
-            .split_by_folder(valid='val')
-            .label_from_folder().transform(([flip_lr(p=0.5)], []), size=size)
-            .databunch(bs=bs, num_workers=workers)
-            .presize(size, scale=(0.35, 1))
-            .normalize(imagenet_stats))
-
-
-def filter_classes(image_list, classes=None):
-    if (classes is None):
-        return image_list
-
-    class_names = ClassFolders.from_indices(classes)
-    def class_filter(path):
-        for class_name in class_names:
-            if class_name in str(path):
-                return True
-        return False
-
-    return image_list.filter_by_func(class_filter)
 
 
 def save_distilled_images_for_fastai(results_pth, save_dir, model_slug='', map_location=None):
