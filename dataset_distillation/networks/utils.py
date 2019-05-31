@@ -15,6 +15,7 @@ from itertools import chain
 
 
 def init_weights(net, state):
+    import ipdb; ipdb.set_trace()
     init_type, init_param = state.init, state.init_param
 
     if init_type == 'imagenet_pretrained':

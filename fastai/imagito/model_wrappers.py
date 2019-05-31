@@ -1,4 +1,5 @@
 from torchvision.models import AlexNet
+import sys; sys.path.append('~/fastai/dataset_distillation')
 from dataset_distillation.networks import AlexCifarNet
 
 
