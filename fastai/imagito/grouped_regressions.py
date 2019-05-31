@@ -7,7 +7,7 @@ from fastai.imagito.nb_utils import zscore, zip_to_series
 
 
 def make_med_acc_table(df):
-    gb_cols = ['date', 'bs', 'label_smoothing', 'classes', 'epochs', 'fp16', 'lr', 'sample', 'size', STRAT]
+    gb_cols = ['date', 'bs', 'label_smoothing', 'classes', 'epochs', 'fp16', 'lr', 'sample', 'size', STRAT, 'flip_lr_p']
     max_acc = df.groupby(gb_cols)['accuracy'].max().reset_index()#.pipe(drop_zero_variance_cols)
     # max_acc['z_acc'] = max_acc.groupby(zby)['accuracy'].transform(zscore)
     # med_acc = max_acc.groupby((zby, 'size', 'lr', ))['z_acc'].median().reset_index()

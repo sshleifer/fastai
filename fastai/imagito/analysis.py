@@ -4,11 +4,22 @@ from fastai.imagito.utils import *
 import pandas as pd
 
 
+
+Z_ACC_EPOCH = 'z_acc_epoch'
+
 STRAT = 'sampling_strat'
 Path.ls = property(lambda self: list(self.iterdir()))
 ACCURACY = 'accuracy'
 ZACC, DATE = 'z_acc', 'date'
 DEFAULT_LR = 0.0030
+DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p']
+ALL_DATA_STRAT = 'All Classes-1.0'
+pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
+pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
+pd.DataFrame.s128 = property(lambda df: df[df['size'] == 128])
+pd.DataFrame.ls_true = property(lambda df: df[df.label_smoothing == True])
+pd.DataFrame.full_train = property(lambda df: df[df['epochs'] == 20])
+pd.DataFrame.bm_strat = property(lambda df: df[df[STRAT] == ALL_DATA_STRAT])
 
 def safe_concat(*args, **kwargs):
     if 'sort' in kwargs:
@@ -21,10 +32,7 @@ def tryfloat(x):
     except Exception: return x
 
 
-DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr',]
-ALL_DATA_STRAT = 'All Classes-1.0'
-pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
-pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
+
 
 def drop_zero_variance_cols(df):
     keep_col_mask = df.apply(lambda x: x.nunique()) > 1
@@ -64,6 +72,13 @@ def combine(metric_df, param_df, min_epochs=5):
 
 
 
+def make_9_19_data_fairer(df, gb_cols=['lr']):
+    bm_df = df[(df[STRAT] ==ALL_DATA_STRAT)]
+    targ = bm_df.e19.sort_values("valid_loss").pipe(drop_zero_variance_cols).dropna(axis=1).ls_true.groupby(gb_cols)[ACCURACY].mean()
+    prox = df[df['epochs']==10].e9.groupby(gb_cols)[ACCURACY].mean()#.sort_index()
+    pl = targ.to_frame('targ').assign(proxy=prox).plot.scatter(x='proxy', y='targ')
+    return pl
+
 
 def make9_19_data(df, acc_col):
     ep9 = df[df.epoch==9].set_index(DATE)
@@ -81,36 +96,38 @@ posc, allc = 'Positive Changes','All Changes'
 
 ls_mask = lambda df: df.label_smoothing
 
-def make_cmb(df):
-    gb_lst = ['lr', 'size']
-    tab_1 = df[(df.epoch==19) & (df[STRAT]=='All Classes-0.5')].loc[ls_mask].groupby(gb_lst)['z_acc_epoch'].median()
-    tab_2 = df[(df.epoch==19) & (df[STRAT]=='All Classes-1.0')].loc[ls_mask].groupby(gb_lst)['z_acc_epoch'].median()
-    tab_3 = df[(df.epoch==9) & (df[STRAT]=='All Classes-1.0')].loc[ls_mask].groupby(gb_lst)['z_acc_epoch'].median()
-    tab_4 = df[(df.epoch==19) & (df[STRAT]=='Half Classes-1.0')].loc[ls_mask].groupby(gb_lst)['z_acc_epoch'].median()
+def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS):
+    agg_col = 'z_acc_epoch'
+    #pdf = df.ls_true
+    agger = lambda  df: df.groupby(gb_lst)[agg_col].median()
+    tab_1 = pdf[(pdf.epoch == 19) & (pdf[STRAT] == 'All Classes-0.5')].pipe(agger)
+    tab_2 = pdf[(pdf.epoch == 19) & (pdf[STRAT] == ALL_DATA_STRAT)].pipe(agger)
+    tab_3 = pdf[(pdf.epoch == 9) & (pdf[STRAT] == ALL_DATA_STRAT)].pipe(agger)
+    tab_4 = pdf[(pdf.epoch == 19) & (pdf[STRAT] == 'Half Classes-1.0')].pipe(agger)
     NAMES = ("50% of Examples", "50% of Epochs", 'Full_Samples', '50% of Classes')
     cmb = tab_1.to_frame(NAMES[0])
     cmb[NAMES[1]] = tab_3
     cmb[NAMES[2]] = tab_2
     cmb[NAMES[3]] = tab_4
-    return cmb
+    return cmb, tab_2
 
-def make_cor_tab(df, tab_2):
-    _gb = [STRAT, 'lr', 'size']
-    best_pars = df[(df.epoch == 19)].groupby(_gb)['z_acc_epoch'].median().unstack(
-        level=[1, 2]).idxmax(1)
-    pgb = df[(df.epoch == 19)].loc[ls_mask].groupby(_gb)
-    all_proxy = pgb['z_acc_epoch'].median().reset_index(level=0)
+
+def make_cor_tab(df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=Z_ACC_EPOCH):
+    _, tab_2 = make_cmb(df)
+
+    best_pars = df.e19.groupby(_gb)[agg_col].median().unstack(level=DEFAULT_CONFIG_COLS).idxmax(1)
+    pgb = df.e19.groupby(_gb)
+    all_proxy = pgb[agg_col].median().reset_index(level=0)
     all_proxy[Y_COL] = tab_2
+    n_experiments = df[(df.epoch == 19)].ls_true[STRAT].value_counts()
 
-    n_experiments = df[(df.epoch == 19)].loc[ls_mask][STRAT].value_counts()
-
-    all_coors = all_proxy.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x['z_acc_epoch']))
-    all_pos_coors = all_proxy[all_proxy['z_acc_epoch'] > 0].groupby(STRAT).apply(
-        lambda x: x[Y_COL].corr(x['z_acc_epoch']))
+    all_coors = all_proxy.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col]))
+    all_pos_coors = all_proxy[all_proxy[agg_col] > 0].groupby(STRAT).apply(
+        lambda x: x[Y_COL].corr(x[agg_col]))
     cor_tab = all_coors.to_frame(allc).join(all_pos_coors.to_frame(posc)).round(2).pipe(
         blind_descending_sort)
-    cor_tab['Best Params'] = best_pars.dropna().apply(lambda x: f'lr={x[0]}, size={x[1]}')
-    cor_tab['N Experiments'] = n_experiments
+    cor_tab['Best Params'] = best_pars#.dropna().apply(lambda x: f'lr={x[0]}, size={x[1]}')
+    cor_tab['N Experiments'] = n_experiments.fillna(0).astype(int)
     return cor_tab
 
 import seaborn as sns
