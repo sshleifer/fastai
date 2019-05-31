@@ -52,12 +52,12 @@ def main(
         sample: Param("Percentage of dataset to sample, ex: 0.1", float)=1.0,
         classes: Param("Comma-separated list of class indices to filter by, ex: 0,5,9", str)=None,
         label_smoothing=False,
-        hardness_lower_bound=0., hardness_upper_bound=1.,
+        hardness_lower_bound: Param("h1", float)=0., hardness_upper_bound: Param("h1", float)=1.,
         save=False,
         flip_lr_p=0.5,
         ):
     "Distributed training of Imagenette."
-    params_dict = locals()
+    params_dict = locals().copy()
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
@@ -69,6 +69,8 @@ def main(
     if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
     params_dict['n_train'] = len(data.train_dl.dataset)
+    params_dict['n_val'] = len(data.valid_dl.dataset)
+
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
