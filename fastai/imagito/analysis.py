@@ -45,8 +45,10 @@ def read_results(experiment_dir):
 
         try:
             par = pd.Series(pickle_load(subdir/'params.pkl'))
-            ts = subdir.name
-            m = pd.read_csv(subdir/'metrics.csv').assign(date=ts)
+            splat = subdir.name.split('_')
+            host = splat[1] if '_' in subdir.name else np.nan
+            ts = splat[0]
+            m = pd.read_csv(subdir/'metrics.csv').assign(date=ts, hostname=host)
             metrics.append(m)
             clas = par['classes']
             par['classes'] = f'{clas[0]}-{clas[-1]}' if isinstance(par['classes'], list) else '0-10'
@@ -72,19 +74,25 @@ def combine(metric_df, param_df, min_epochs=5):
 
 
 
-def make_9_19_data_fairer(df, gb_cols=['lr']):
-    bm_df = df[(df[STRAT] ==ALL_DATA_STRAT)]
-    targ = bm_df.e19.sort_values("valid_loss").pipe(drop_zero_variance_cols).dropna(axis=1).ls_true.groupby(gb_cols)[ACCURACY].mean()
-    prox = df[df['epochs']==10].e9.groupby(gb_cols)[ACCURACY].mean()#.sort_index()
-    pl = targ.to_frame('targ').assign(proxy=prox).plot.scatter(x='proxy', y='targ')
-    return pl
+def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
+    df = df.bm_strat
+    targ = df.e19.groupby(gb_cols)[ACCURACY].mean()
+    prox = df[(df['epochs']==ref_epoch) & (df['epoch']==ref_epoch-1)].groupby(gb_cols)[ACCURACY].mean()#.sort_index()
+    pl = targ.to_frame('targ').assign(proxy=prox).dropna()
+    corr = pl.corr().loc['targ', 'proxy']
+    ax = pl.plot.scatter(x='proxy', y='targ')
+    ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
+    return ax
 
 
 def make9_19_data(df, acc_col):
-    ep9 = df[df.epoch==9].set_index(DATE)
-    ep19 = df[df.epoch==19].set_index(DATE)
-    pl_data = ep9[acc_col].to_frame('ep9').assign(ep19=ep19[acc_col])
-    return pl_data
+    ep9 = df.e9.set_index(DATE)
+    ep19 = df.e19.set_index(DATE)
+    pl = ep9.rename(columns={acc_col: 'proxy'}).assign(targ=ep19[acc_col])
+    corr = pl.corr().loc['targ', 'proxy']
+    ax = pl.plot.scatter(x='proxy', y='targ')
+    ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
+    return pl
 
 
 ### Tables for Milestone

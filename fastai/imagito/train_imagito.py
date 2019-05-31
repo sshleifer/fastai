@@ -67,7 +67,7 @@ def main(
     # save params to file like experiments/2019-05-12_22:10/params.pkl
     now = get_date_str(seconds=True)
     Path('experiments').mkdir(exist_ok=True)
-    model_dir = Path(f'experiments/{now}')
+    model_dir = Path(f'experiments/{now}_{HOSTNAME}')
     model_dir.mkdir(exist_ok=False)
     pickle_save(params_dict, model_dir/'params.pkl')
     n_classes = len(classes) if classes is not None else 10
