@@ -33,22 +33,24 @@ from fastai.imagito.send_sms import try_send_sms
 #     'classes': [None, [0,1,2,3,4], [0,1]],
 # }))
 
-pg_hardness = update_batch_size(ParameterGrid({
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
-    'label_smoothing': [True, False],
-    'size': [128],
-    'bs': [256],
-    'hardness_upper_bound':[.1, .75, .5, .25],
-}))[:20]
-pg_easy = update_batch_size(ParameterGrid({
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
-    'label_smoothing': [True, False],
-    'size': [128],
-    'bs': [256],
-    'hardness_lower_bound': [.9, .75, .5, .25],
-}))
 
-PGS = [pg_hardness, pg_easy]
+
+BASE = {
+    'size': [128],
+    'bs': [256],
+    'flip_lr_p': [0., .25, .5]
+}
+a= {'hardness_upper_bound':[.1, .75, .5, .25]}
+b = {'hardness_lower_bound': [.9, .75, .5, .25]}
+c = {'sample': [1., .7, .5, .25]}
+
+PGS = []
+for extra in [a,b,c]:
+    p = BASE.copy()
+    p.update(extra)
+    pg = update_batch_size(ParameterGrid(p))
+    PGS.append(pg)
+
 def run_many(pg):
     # try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
     failures = []
