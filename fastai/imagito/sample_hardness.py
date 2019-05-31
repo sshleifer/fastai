@@ -118,9 +118,6 @@ import pandas as pd
 IMAGENETTE_SIZE = 12894
 
 
-
-import pandas as pd
-IMAGENETTE_SIZE = 12894
 _HOMES = map(Path, ['/home/shleifer/fastai/', '/home/eprokop/fastai/', '/Users/shleifer/fastai-fork/'])
 for HOME in _HOMES:
     if HOME.exists(): break

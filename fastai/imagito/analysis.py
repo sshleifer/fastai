@@ -1,6 +1,7 @@
 from pathlib import Path
 from fastai.imagito.nb_utils import *
 from fastai.imagito.utils import *
+import pandas as pd
 
 
 STRAT = 'sampling_strat'
@@ -29,7 +30,6 @@ def drop_zero_variance_cols(df):
     keep_col_mask = df.apply(lambda x: x.nunique()) > 1
     return df.loc[:, keep_col_mask]
 
-
 def read_results(experiment_dir):
     metrics = []
     params = {}
@@ -43,12 +43,13 @@ def read_results(experiment_dir):
             clas = par['classes']
             par['classes'] = f'{clas[0]}-{clas[-1]}' if isinstance(par['classes'], list) else '0-10'
             params[ts] = par
-        except FileNotFoundError:
-            print(f'err: {subdir}')
+        except (FileNotFoundError, pd.errors.EmptyDataError) as e:
+            print(f'{type(e)}: {subdir}')
             continue
     metric_df = safe_concat(metrics, sort=False)
     param_df = pd.DataFrame(params).T.rename_axis('date').sort_index()
     return metric_df, param_df
+
 
 
 def combine(metric_df, param_df, min_epochs=5):
@@ -94,9 +95,10 @@ def make_cmb(df):
     return cmb
 
 def make_cor_tab(df, tab_2):
-    best_pars = df[(df.epoch == 19)].groupby((STRAT, 'lr', 'size'))['z_acc_epoch'].median().unstack(
+    _gb = [STRAT, 'lr', 'size']
+    best_pars = df[(df.epoch == 19)].groupby(_gb)['z_acc_epoch'].median().unstack(
         level=[1, 2]).idxmax(1)
-    pgb = df[(df.epoch == 19)].loc[ls_mask].groupby((STRAT, 'lr', 'size'))
+    pgb = df[(df.epoch == 19)].loc[ls_mask].groupby(_gb)
     all_proxy = pgb['z_acc_epoch'].median().reset_index(level=0)
     all_proxy[Y_COL] = tab_2
 
