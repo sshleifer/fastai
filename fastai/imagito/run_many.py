@@ -36,19 +36,12 @@ from fastai.imagito.send_sms import try_send_sms
 pg_hardness = update_batch_size(ParameterGrid({
     'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
     'label_smoothing': [True, False],
-    'size': [128],
-    'bs': [256],
-    'hardness_upper_bound':[.1, .75, .5, .25],
-}))
-pg_easy = update_batch_size(ParameterGrid({
-    'lr': [1e-4, 1e-3, 3e-3, 1e-2, .05, 1e-1],
-    'label_smoothing': [True, False],
-    'size': [128],
-    'bs': [256],
-    'hardness_lower_bound': [.9, .75, .5, .25],
+    'size': [32],
+    'bs': [16],
+    'ds_path': ['/home/shleifer/distilled_dataset_v0/'],
 }))
 
-PGS = [pg_hardness, pg_easy]
+PGS = [pg_hardness]
 def run_many(pg):
     try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
     failures = []
