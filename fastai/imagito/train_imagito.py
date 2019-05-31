@@ -12,8 +12,6 @@ torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
 
 
-
-
 @call_parse
 def main(
         gpu:Param("GPU to run on", str)=None,

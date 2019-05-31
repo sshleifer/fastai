@@ -2,7 +2,7 @@ from torchvision.models import AlexNet
 from torch import nn
 
 def alexnet_wrapper(c_out):
-    return AlexNet(n_classes=c_out)
+    return AlexNet(num_classes=c_out)
 
 
 class FakeDistillState:
