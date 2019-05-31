@@ -61,6 +61,7 @@ class AlexCifarNet(utils.ReparamModule):
         return x
 
 
+
 # ImageNet
 class AlexNet(utils.ReparamModule):
     supported_dims = {224}
