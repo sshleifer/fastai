@@ -7,6 +7,7 @@ from fastai.imagito.send_sms import try_send_sms
 
 FLIP_GRID = [0., .25, .5]
 LR_GRID = [0.0001, 0.001, 0.003, 0.01, 0.05, 0.1]
+FINER_LR_GRID =[0.007, 0.015, .02, .03]
 a = {'epochs': [10]}
 b = {'epochs': [5]}
 c = {'epochs': [1]}
@@ -17,7 +18,7 @@ pgs = []
 BASE = {
     'size': [128],
     'bs': [256],
-    'flip_lr_p': FLIP_GRID,
+    'lr': FINER_LR_GRID,
 }
 for extra in [a, b, c]:
     p = BASE.copy()
@@ -26,18 +27,6 @@ for extra in [a, b, c]:
     pgs.extend(pg)
 
 
-BASE2 = {
-    'size': [128],
-    'bs': [256],
-    #'flip_lr_p': FLIP_GRID,
-    'lr': LR_GRID,
-}
-
-for extra in [b, c]:
-    p = BASE2.copy()
-    p.update(extra)
-    pg = update_batch_size(ParameterGrid(p))
-    pgs.extend(pg)
 
 def run_many(pg):
     # try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
