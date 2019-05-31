@@ -1,3 +1,4 @@
+import socket
 from fastai.script import *
 from fastai.vision import *
 from fastai.vision.models.xresnet2 import xresnet50_2
@@ -12,26 +13,8 @@ from fastai.imagito.sample_hardness import *
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
 
-def params_to_dict(gpu, woof, lr, size, alpha, mom, eps, epochs, bs, mixup, opt,
-                   arch, dump, sample, classes=None):
-    return {
-        'gpu': gpu,
-        'woof': woof,
-        'lr': lr,
-        'size': size,
-        'alpha': alpha,
-        'mom': mom,
-        'eps': eps,
-        'epochs': epochs,
-        'bs': bs,
-        'mixup': mixup,
-        'opt': opt,
-        'arch': arch,
-        'dump': dump,
-        'sample': sample,
-        'classes': classes
-    }
 
+HOSTNAME = socket.gethostname()
 
 @call_parse
 def main(
@@ -70,6 +53,7 @@ def main(
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
     params_dict['n_train'] = len(data.train_dl.dataset)
     params_dict['n_val'] = len(data.valid_dl.dataset)
+    params_dict['hostname'] = HOSTNAME
 
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
