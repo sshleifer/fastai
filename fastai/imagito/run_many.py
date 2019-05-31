@@ -4,20 +4,37 @@ from fastai.imagito.utils import tqdm_nice, update_batch_size
 from fastai.imagito.send_sms import try_send_sms
 
 
+
+FLIP_GRID = [0., .25, .5]
+LR_GRID = [0.0001, 0.001, 0.003, 0.01, 0.05, 0.1]
+a = {'epochs': [10]}
+b = {'epochs': [5]}
+c = {'epochs': [1]}
+#c = {'sample': [1., .7, .5, .25]}
+
+pgs = []
+
 BASE = {
     'size': [128],
     'bs': [256],
-    'flip_lr_p': [0., .25, .5]
+    'flip_lr_p': FLIP_GRID,
+}
+for extra in [a, b, c]:
+    p = BASE.copy()
+    p.update(extra)
+    pg = update_batch_size(ParameterGrid(p))
+    pgs.extend(pg)
+
+
+BASE2 = {
+    'size': [128],
+    'bs': [256],
+    #'flip_lr_p': FLIP_GRID,
+    'lr': LR_GRID,
 }
 
-LR_GRID = [0.0001, 0.001, 0.003, 0.01, 0.05, 0.1]
-a = {'hardness_upper_bound': [.1, .75, .5, .25]}
-b = {'hardness_lower_bound': [.9, .75, .5, .25]}
-c = {'sample': [1., .7, .5, .25]}
-
-pgs = []
-for extra in [a, b,c]:
-    p = BASE.copy()
+for extra in [b, c]:
+    p = BASE2.copy()
     p.update(extra)
     pg = update_batch_size(ParameterGrid(p))
     pgs.extend(pg)
