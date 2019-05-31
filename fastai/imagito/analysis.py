@@ -42,7 +42,6 @@ def read_results(experiment_dir):
     metrics = []
     params = {}
     for subdir in tqdm_nice(experiment_dir.ls):
-
         try:
             par = pd.Series(pickle_load(subdir/'params.pkl'))
             splat = subdir.name.split('_')
@@ -61,6 +60,12 @@ def read_results(experiment_dir):
     return metric_df, param_df
 
 
+def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
+    gb_size = df.groupby([STRAT] + config_cols).size().unstack(config_cols)
+    return gb_size.loc[[strat, baseline]].dropna(axis=1, how='all')
+
+
+
 
 def combine(metric_df, param_df, min_epochs=5):
     keep_dates = metric_df.groupby('date').max().loc[lambda x: x.epoch >= min_epochs-1].index
@@ -71,7 +76,6 @@ def combine(metric_df, param_df, min_epochs=5):
     print(f'n_experiments: {changed_params.shape}')
     df = metric_df.merge(changed_params.reset_index(), how='left')
     return df
-
 
 
 def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
@@ -106,7 +110,6 @@ ls_mask = lambda df: df.label_smoothing
 
 def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS):
     agg_col = 'z_acc_epoch'
-    #pdf = df.ls_true
     agger = lambda  df: df.groupby(gb_lst)[agg_col].median()
     tab_1 = pdf[(pdf.epoch == 19) & (pdf[STRAT] == 'All Classes-0.5')].pipe(agger)
     tab_2 = pdf[(pdf.epoch == 19) & (pdf[STRAT] == ALL_DATA_STRAT)].pipe(agger)
@@ -127,9 +130,10 @@ def make_cor_tab(df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=Z_ACC_EPOCH):
     pgb = df.e19.groupby(_gb)
     all_proxy = pgb[agg_col].median().reset_index(level=0)
     all_proxy[Y_COL] = tab_2
-    n_experiments = df[(df.epoch == 19)].ls_true[STRAT].value_counts()
+    n_experiments = df.e19[STRAT].value_counts()  # Wrong
 
     all_coors = all_proxy.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col]))
+
     all_pos_coors = all_proxy[all_proxy[agg_col] > 0].groupby(STRAT).apply(
         lambda x: x[Y_COL].corr(x[agg_col]))
     cor_tab = all_coors.to_frame(allc).join(all_pos_coors.to_frame(posc)).round(2).pipe(

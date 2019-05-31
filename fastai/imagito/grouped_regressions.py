@@ -37,4 +37,4 @@ def run_grouped_regs(df):
     reg_results = pd.DataFrame([regress_aligned_pairs(acc_table, strat) for strat in all_strats])
     reg_results = reg_results.round(2).loc[lambda x: x['N_configs'] > 2.]
     reg_results['N_configs'] = reg_results['N_configs'].astype(int)
-    return reg_results.rename(columns={'X': 'coeff'})
+    return reg_results.rename(columns={'X': 'coeff'}).set_index(STRAT)
