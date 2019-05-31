@@ -1,0 +1,8 @@
+Proxy Strategy,All Changes,Positive Changes,Best Params
+50% Classes,0.98,0.63,"lr=0.003, size=256"
+50% Classes x 50%,0.94,0.84,"lr=0.003, size=256"
+50% of Examples,0.87,0.81,"lr=0.01, size=256"
+All Classes x 25%,0.84,0.55,"lr=0.003, size=256"
+Half Classes x 25%,0.23,0.45,"lr=0.003, size=256"
+50% of Epochs, .15, .50, "lr=0.01, size=256"
+

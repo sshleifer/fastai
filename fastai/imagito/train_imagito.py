@@ -54,6 +54,7 @@ def main(
         label_smoothing=False,
         hardness_lower_bound=0., hardness_upper_bound=1.,
         save=False,
+        flip_lr_p=0.5,
         ):
     "Distributed training of Imagenette."
     params_dict = locals()
@@ -66,7 +67,7 @@ def main(
 
     filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound)
     if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
-    data = get_data(size, woof, bs, sample, classes, filter_func=filter_func)
+    data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
     params_dict['n_train'] = len(data.train_dl.dataset)
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
