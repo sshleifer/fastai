@@ -9,7 +9,9 @@ BASE = {
     'bs': [256],
     'flip_lr_p': [0., .25, .5]
 }
-a= {'hardness_upper_bound':[.1, .75, .5, .25]}
+
+LR_GRID = [0.0001, 0.001, 0.003, 0.01, 0.05, 0.1]
+a = {'hardness_upper_bound': [.1, .75, .5, .25]}
 b = {'hardness_lower_bound': [.9, .75, .5, .25]}
 c = {'sample': [1., .7, .5, .25]}
 
