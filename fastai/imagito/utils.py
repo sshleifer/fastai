@@ -38,7 +38,7 @@ def update_batch_size(pg):
     new_pars = []
     for p in pg:
         new_p = p.copy()
-        if p['size'] > 128:
+        if 'size' in p and p['size'] > 128:
             new_p['bs'] = min(new_p['bs'], 128)
         new_pars.append(new_p)
     return new_pars

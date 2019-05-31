@@ -4,16 +4,24 @@ from fastai.imagito.utils import tqdm_nice, update_batch_size
 from fastai.imagito.send_sms import try_send_sms
 
 
-BASE = {
-    'size': [128],
-    'bs': [256],
-    'flip_lr_p': [0., .25, .5]
-}
 
+FLIP_GRID = [0., .25, .5]
 LR_GRID = [0.0001, 0.001, 0.003, 0.01, 0.05, 0.1]
-a = {'hardness_upper_bound': [.1, .75, .5, .25]}
-b = {'hardness_lower_bound': [.9, .75, .5, .25]}
-c = {'sample': [1., .7, .5, .25]}
+FINER_LR_GRID =[0.007, 0.015, .02, .03]
+LABEL_SMOOTHING_GRID = [True, False]
+
+BASE = {
+    'lr': FINER_LR_GRID,
+}
+HUB = 'hardness_upper_bound'
+HLB = 'hardness_lower_bound'
+HUB_GRID = [.1, .75, .5, .25]
+HLB_GRID = [.9, .75, .5, .25]
+SAMPLE_GRID = [1., .7, .5, .25]
+a = {HUB: HUB_GRID}
+b = {HLB: HLB_GRID}  # easy
+c = {'sample': SAMPLE_GRID}
+#d = {HUB: [.01], HLB: [.75]}
 
 pgs = []
 for extra in [a, b,c]:
