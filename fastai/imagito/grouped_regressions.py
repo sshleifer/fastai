@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
@@ -21,7 +21,7 @@ def regress_aligned_pairs(acc_table, proxy_strat):
     y = acc_table[acc_table[STRAT] == ALL_DATA_STRAT].pipe(agg_df).to_frame('y')
     x = acc_table[acc_table[STRAT] == proxy_strat].pipe(agg_df).to_frame('X')
     xy = y.join(x, how='inner').pipe(zscore)
-    if xy.shape[0] <= 1:
+    if xy.shape[0] <= 1 or xy['X'].isnull().all():
         return pd.Series({'N_configs': xy.shape[0], STRAT: proxy_strat})
     clf = LinearRegression().fit(xy[['X']], xy['y'])
     coefs = zip_to_series(['X'], clf.coef_)
