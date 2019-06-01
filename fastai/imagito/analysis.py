@@ -12,7 +12,7 @@ Path.ls = property(lambda self: list(self.iterdir()))
 ACCURACY = 'accuracy'
 ZACC, DATE = 'z_acc', 'date'
 DEFAULT_LR = 0.0030
-DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p']
+DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof']
 ALL_DATA_STRAT = 'All Classes-1.0'
 pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
 pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
