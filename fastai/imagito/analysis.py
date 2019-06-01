@@ -25,7 +25,7 @@ pd.DataFrame.imagenette =property(lambda df: df[df['woof'] == 0])
 
 def best_epoch(df):
     gb = df.groupby('date')
-    return gb.first().assign(accuracy=df.groupby('date').accuracy.max()).pipe(drop_zero_variance_cols)
+    return gb.first().assign(accuracy=df.groupby('date').accuracy.max())#.pipe(drop_zero_variance_cols)
 
 pd.DataFrame.exp_df = property(best_epoch)
 
