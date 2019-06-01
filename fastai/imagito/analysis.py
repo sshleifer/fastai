@@ -12,7 +12,7 @@ Path.ls = property(lambda self: list(self.iterdir()))
 ACCURACY = 'accuracy'
 ZACC, DATE = 'z_acc', 'date'
 DEFAULT_LR = 0.0030
-DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p']
+DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof']
 ALL_DATA_STRAT = 'All Classes-1.0'
 pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
 pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
@@ -20,6 +20,15 @@ pd.DataFrame.s128 = property(lambda df: df[df['size'] == 128])
 pd.DataFrame.ls_true = property(lambda df: df[df.label_smoothing == True])
 pd.DataFrame.full_train = property(lambda df: df[df['epochs'] == 20])
 pd.DataFrame.bm_strat = property(lambda df: df[df[STRAT] == ALL_DATA_STRAT])
+pd.DataFrame.ds_woof = property(lambda df: df[df['woof'] == 1])
+pd.DataFrame.imagenette =property(lambda df: df[df['woof'] == 0])
+
+def best_epoch(df):
+    gb = df.groupby('date')
+    return gb.first().assign(accuracy=df.groupby('date').accuracy.max())#.pipe(drop_zero_variance_cols)
+
+pd.DataFrame.exp_df = property(best_epoch)
+
 
 def safe_concat(*args, **kwargs):
     if 'sort' in kwargs:
@@ -40,40 +49,64 @@ def drop_zero_variance_cols(df):
 
 def read_results(experiment_dir):
     metrics = []
-    params = {}
+    params = []
     for subdir in tqdm_nice(experiment_dir.ls):
         try:
             par = pd.Series(pickle_load(subdir/'params.pkl'))
             splat = subdir.name.split('_')
             host = splat[1] if '_' in subdir.name else np.nan
             ts = splat[0]
+            d = '2019-05-31-19:11:27'
+
             m = pd.read_csv(subdir/'metrics.csv').assign(date=ts, hostname=host)
             metrics.append(m)
             clas = par['classes']
             par['classes'] = f'{clas[0]}-{clas[-1]}' if isinstance(par['classes'], list) else '0-10'
-            params[ts] = par
+            par['date'], par['hostname'] = ts, host
+            params.append(par)
+            #if ts == d: import ipdb; ipdb.set_trace()
         except (FileNotFoundError, pd.errors.EmptyDataError) as e:
             print(f'{type(e)}: {subdir}')
             continue
-    metric_df = safe_concat(metrics, sort=False)
-    param_df = pd.DataFrame(params).T.rename_axis('date').sort_index()
+    metric_df = safe_concat(metrics, sort=False).fillna({'hostname': ''})
+    param_df = pd.DataFrame(params).fillna({'hostname': ''})
     return metric_df, param_df
+
+def combine(metric_df, param_df):
+    df = metric_df.merge(param_df.reset_index(), how='left',
+                         on=['date', 'hostname'])
+    return df
+
+def preprocess_and_assign_strat(df):
+    DS_PATH = 'ds_path'
+    df['_hardness_str'] = df.apply(
+        lambda r: f'hard-{r.hardness_lower_bound}-{r.hardness_upper_bound}', 1)
+    DEFAULT_HARD_STR = 'hard-0.0-1.0'
+    df['classes'] = df['classes'].replace(
+        {'0-10': 'All Classes', '0-4': 'Half Classes', '5-9': 'Other Half Classes',
+         '0-1': '2Classes'})
+    df['seconds'] = df['time'].str.split(':').apply(lambda x: 60 * int(x[0]) + int(x[1]))
+    df[STRAT] = df['classes'] + '-' + df['sample'].astype(str)
+
+    df.loc[df[DS_PATH] != 'imagenette', STRAT] = 'distillation'
+    df.loc[df['_hardness_str'] != DEFAULT_HARD_STR, STRAT] = df.loc[
+        df['_hardness_str'] != DEFAULT_HARD_STR, '_hardness_str']
+    emsk = df['epochs'] != 20
+    df.loc[emsk, STRAT] = df.loc[emsk, STRAT] + '-ep' + df.loc[emsk, 'epochs'].astype(str)
+    df['woof'] = df['woof'].replace({True: 1})
+    return df
+
+
+
+
+
+
 
 
 def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
     gb_size = df.groupby([STRAT] + config_cols).size().unstack(config_cols)
     return gb_size.loc[[strat, baseline]].dropna(axis=1, how='all')
 
-
-def combine(metric_df, param_df):
-    keep_dates = metric_df.groupby('date').max().index
-    # print(len(keep_dates))
-    metric_df =  metric_df[metric_df.date.isin(keep_dates)]
-    #print(f'metric_df: {metric_df.shape}')
-    changed_params = drop_zero_variance_cols(param_df)
-    print(f'n_experiments: {changed_params.shape[0]}')
-    df = metric_df.merge(changed_params.reset_index(), how='left')
-    return df
 
 
 def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
