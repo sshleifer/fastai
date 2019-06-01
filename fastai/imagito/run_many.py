@@ -2,7 +2,7 @@ from sklearn.model_selection import ParameterGrid
 from fastai.imagito.train_imagito import main
 from fastai.imagito.utils import tqdm_nice, update_batch_size
 from fastai.imagito.send_sms import try_send_sms
-from fastai.imagito.grid_const import GRID_18, NEED_TO_RUN
+from fastai.imagito.grid_const import GRID_18, NEED_TO_RUN_ERIC_BOX_V2
 
 
 FLIP_GRID = [0., .25, .5]
@@ -15,8 +15,8 @@ HUB = 'hardness_upper_bound'
 HLB = 'hardness_lower_bound'
 
 
-to_grid = lambda p: update_batch_size(ParameterGrid(p))
 def get_18(sampling_dct):
+
     pg = []
     for k in GRID_18:
         new = k.copy()
@@ -56,5 +56,5 @@ def run_many(pg):
 
 PGS = [pgs]
 if __name__ == '__main__':
-    run_many(NEED_TO_RUN)
+    run_many(NEED_TO_RUN_ERIC_BOX_V2)
     #for pgrid in PGS: run_many(pgrid)

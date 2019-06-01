@@ -53,6 +53,48 @@ def parse_strat(strat):
 
 
 
+STRAT2PARAMS_V2 = {
+    #'2Classes-0.1': {'classes': [0, 1], 'sample': 0.1},
+ #'2Classes-0.5': {'classes': [0, 1], 'sample': 0.5},
+ #'2Classes-1.0': {'classes': [0, 1], 'sample': 1.0},
+ 'All Classes-0.1': {'classes': None, 'sample': 0.1},
+ 'All Classes-0.25': {'classes': None, 'sample': 0.25},
+ 'All Classes-0.5': {'classes': None, 'sample': 0.5},
+ 'All Classes-0.7': {'classes': None, 'sample': 0.7},
+ 'All Classes-1.0': {'classes': None, 'sample': 1.0},
+ 'All Classes-1.0-ep1': {'epochs': 1, 'classes': None, 'sample': 1.0},
+ 'All Classes-1.0-ep10': {'epochs': 10, 'classes': None, 'sample': 1.0},
+ 'All Classes-1.0-ep5': {'epochs': 5, 'classes': None, 'sample': 1.0},
+ 'Half Classes-0.1': {'classes': [0, 1, 2, 3, 4], 'sample': 0.1},
+ 'Half Classes-0.25': {'classes': [0, 1, 2, 3, 4], 'sample': 0.25},
+ 'Half Classes-0.5': {'classes': [0, 1, 2, 3, 4], 'sample': 0.5},
+ 'Half Classes-0.7': {'classes': [0, 1, 2, 3, 4], 'sample': 0.7},
+ 'Half Classes-1.0': {'classes': [0, 1, 2, 3, 4], 'sample': 1.0},
+ 'Other Half Classes-1.0': {'classes': [5, 6, 7, 8, 9], 'sample': 1.0},
+ 'distillation': {},
+ 'hard-0.0-0.1': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.1},
+ 'hard-0.0-0.25': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.25},
+ 'hard-0.0-0.5': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.5},
+ 'hard-0.0-0.75': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.75},
+ 'hard-0.05-0.5': {'hardness_lower_bound': 0.05, 'hardness_upper_bound': 0.5},
+ 'hard-0.25-1.0': {'hardness_lower_bound': 0.25, 'hardness_upper_bound': 1.0},
+ 'hard-0.5-1.0': {'hardness_lower_bound': 0.5, 'hardness_upper_bound': 1.0},
+ 'hard-0.75-1.0': {'hardness_lower_bound': 0.75, 'hardness_upper_bound': 1.0},
+ 'hard-0.9-1.0': {'hardness_lower_bound': 0.9, 'hardness_upper_bound': 1.0}
+}
+
+arches = {'arch': ['xresnet18','xresnet101', 'presnet18']}
+from sklearn.model_selection import ParameterGrid
+from fastai.imagito.utils import update_batch_size
+to_grid = lambda p: update_batch_size(ParameterGrid(p))
+NEED_TO_RUN_ERIC_BOX_V2 = []
+for _, v in STRAT2PARAMS_V2.items():
+    d = {k: [v] for k, v in v.items()}
+    d.update(arches)
+    NEED_TO_RUN_ERIC_BOX_V2.extend(to_grid(d))
+
+
+
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},
     'Half Classes-0.5': {'classes': halfc, 'sample': .5},

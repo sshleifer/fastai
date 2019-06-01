@@ -1,14 +1,17 @@
 import socket
 from fastai.script import *
 from fastai.vision import *
-from fastai.vision.models.xresnet2 import xresnet50_2
-from fastai.vision.models.xresnet import xresnet50
+from fastai.vision.models.xresnet2 import xresnet50_2, xresnet18
+from fastai.vision.models.xresnet import xresnet101
+from fastai.vision.models.presnet import presnet18
 from fastai.callbacks import *
 from fastai.distributed import *
 from fastprogress import fastprogress
 from fastai.imagito.utils import *
 from fastai.imagito.classes import ClassUtils
 from fastai.imagito.sample_hardness import *
+
+
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
@@ -41,6 +44,7 @@ def main(
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
+    m = xresnet50_2 if arch is None else globals()[arch]
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
@@ -61,7 +65,7 @@ def main(
     lr *= bs_rat
 
 
-    m = xresnet50_2 if arch is None else globals()[arch]
+
     # NOTE(SS): globals()[arch] raised KeyError
 
     # save params to file like experiments/2019-05-12_22:10/params.pkl
