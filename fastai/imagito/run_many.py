@@ -56,5 +56,5 @@ def run_many(pg):
 
 PGS = [pgs]
 if __name__ == '__main__':
-    run_many(NEED_TO_RUN_ERIC_BOX_V2)
+    run_many(reversed(NEED_TO_RUN_ERIC_BOX_V2[:150]))
     #for pgrid in PGS: run_many(pgrid)
