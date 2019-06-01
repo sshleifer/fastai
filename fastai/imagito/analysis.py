@@ -20,8 +20,8 @@ pd.DataFrame.s128 = property(lambda df: df[df['size'] == 128])
 pd.DataFrame.ls_true = property(lambda df: df[df.label_smoothing == True])
 pd.DataFrame.full_train = property(lambda df: df[df['epochs'] == 20])
 pd.DataFrame.bm_strat = property(lambda df: df[df[STRAT] == ALL_DATA_STRAT])
-pd.DataFrame.woof = property(lambda df: df[df['woof'] == True])
-pd.DataFrame.imagenette = property(lambda df: df[df['woof'] != True])
+pd.DataFrame.ds_woof = property(lambda df: df[df['woof'] == 1])
+pd.DataFrame.imagenette =property(lambda df: df[df['woof'] == 0])
 
 def best_epoch(df):
     gb = df.groupby('date')
@@ -77,11 +77,35 @@ def combine(metric_df, param_df):
                          on=['date', 'hostname'])
     return df
 
+def preprocess_and_assign_strat(df):
+    DS_PATH = 'ds_path'
+    df['_hardness_str'] = df.apply(
+        lambda r: f'hard-{r.hardness_lower_bound}-{r.hardness_upper_bound}', 1)
+    DEFAULT_HARD_STR = 'hard-0.0-1.0'
+    df['classes'] = df['classes'].replace(
+        {'0-10': 'All Classes', '0-4': 'Half Classes', '5-9': 'Other Half Classes',
+         '0-1': '2Classes'})
+    df['seconds'] = df['time'].str.split(':').apply(lambda x: 60 * int(x[0]) + int(x[1]))
+    df[STRAT] = df['classes'] + '-' + df['sample'].astype(str)
+
+    df.loc[df[DS_PATH] != 'imagenette', STRAT] = 'distillation'
+    df.loc[df['_hardness_str'] != DEFAULT_HARD_STR, STRAT] = df.loc[
+        df['_hardness_str'] != DEFAULT_HARD_STR, '_hardness_str']
+    emsk = df['epochs'] != 20
+    df.loc[emsk, STRAT] = df.loc[emsk, STRAT] + '-ep' + df.loc[emsk, 'epochs'].astype(str)
+    df['woof'] = df['woof'].replace({True: 1})
+    return df
+
+
+
+
+
+
+
+
 def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
     gb_size = df.groupby([STRAT] + config_cols).size().unstack(config_cols)
     return gb_size.loc[[strat, baseline]].dropna(axis=1, how='all')
-
-
 
 
 
