@@ -24,9 +24,6 @@ def get_18(sampling_dct):
         pg.append(new)
     return pg
 
-
-
-
 BASE = {
     'lr': FINER_LR_GRID,
 }

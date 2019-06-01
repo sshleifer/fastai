@@ -34,6 +34,25 @@ G11 = [{'label_smoothing': True, 'lr': 0.003, 'flip_lr_p': 0.5},
        {'label_smoothing': True, 'lr': 0.05, 'flip_lr_p': 0.5}]
 halfc = list(range(5))
 
+def parse_strat(strat):
+    p = {}
+    if 'ep' in strat:
+        strat, ep = strat.split('ep')
+        p['epochs'] = int(ep)
+    if 'Classes' in strat:
+        classstr, sample = strat.split('Classes')
+        classes = {'2':[0,1], 'Half ': halfc, 'All ': None, 'Other Half ': list(range(5,10))
+                   }[classstr]
+        p['classes'] = classes
+        p['sample'] = float(sample.strip('-'))
+    if 'hard' in strat:
+        assert p == {}
+        _, lb, ub = strat.split('-')
+        p.update({HLB:float(lb), HUB:float(ub)})
+    return p
+
+
+
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},
     'Half Classes-0.5': {'classes': halfc, 'sample': .5},
@@ -51,6 +70,8 @@ strat2params = {
     'All Classes-1.0-ep5': {'epochs': 5},
     'All Classes-1.0-ep1': {'epochs': 1},
 }
+
+
 NEED_TO_RUN_ERIC_BOX = [{'label_smoothing': False, 'lr': 0.003, 'flip_lr_p': 0.5, 'epochs': 10},
  {'label_smoothing': True, 'lr': 0.003, 'flip_lr_p': 0.5, 'epochs': 10},
  {'label_smoothing': False, 'lr': 0.0001, 'flip_lr_p': 0.5, 'epochs': 10},
