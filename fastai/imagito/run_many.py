@@ -25,27 +25,6 @@ def get_18(sampling_dct):
     return pg
 
 
-
-
-BASE = {
-    'lr': FINER_LR_GRID,
-}
-
-HUB_GRID = [.1, .75, .5, .25]
-HLB_GRID = [.9, .75, .5, .25]
-SAMPLE_GRID = [1., .7, .5, .25]
-a = {HUB: HUB_GRID}
-b = {HLB: HLB_GRID}  # easy
-c = {'sample': SAMPLE_GRID}
-#d = {HUB: [.01], HLB: [.75]}
-
-pgs = []
-for extra in [a, b,c]:
-    p = BASE.copy()
-    p.update(extra)
-    pg = update_batch_size(ParameterGrid(p))
-    pgs.extend(pg)
-
 def run_many(pg):
     # try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
     failures = []
@@ -57,7 +36,5 @@ def run_many(pg):
             print(e)
     try_send_sms(f'Finished experiments: failures: {failures}')
 
-PGS = [pgs]
 if __name__ == '__main__':
     run_many(NEED_TO_RUN_ERIC_BOX)
-    #for pgrid in PGS: run_many(pgrid)
