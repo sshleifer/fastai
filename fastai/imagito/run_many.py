@@ -2,7 +2,7 @@ from sklearn.model_selection import ParameterGrid
 from fastai.imagito.train_imagito import main
 from fastai.imagito.utils import tqdm_nice, update_batch_size
 from fastai.imagito.send_sms import try_send_sms
-from fastai.imagito.grid_const import GRID_18
+from fastai.imagito.grid_const import GRID_18, NEED_TO_RUN
 
 
 FLIP_GRID = [0., .25, .5]
@@ -59,5 +59,5 @@ def run_many(pg):
 
 PGS = [pgs]
 if __name__ == '__main__':
-    for pgrid in PGS:
-        run_many(pgrid)
+    run_many(NEED_TO_RUN)
+    #for pgrid in PGS: run_many(pgrid)
