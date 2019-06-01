@@ -83,15 +83,22 @@ STRAT2PARAMS_V2 = {
  'hard-0.9-1.0': {'hardness_lower_bound': 0.9, 'hardness_upper_bound': 1.0}
 }
 
+
+
 arches = {'arch': ['xresnet18','xresnet101', 'presnet18']}
 from sklearn.model_selection import ParameterGrid
 from fastai.imagito.utils import update_batch_size
 to_grid = lambda p: update_batch_size(ParameterGrid(p))
 NEED_TO_RUN_ERIC_BOX_V2 = []
-for _, v in STRAT2PARAMS_V2.items():
-    d = {k: [v] for k, v in v.items()}
-    d.update(arches)
-    NEED_TO_RUN_ERIC_BOX_V2.extend(to_grid(d))
+def listier(j):
+    return {k: [v] for k, v in j.items()}
+
+for shtuff in GRID_18:
+    for _, j in STRAT2PARAMS_V2.items():
+        d = j.copy()
+        d.update(shtuff)
+        d['woof'] = True
+        NEED_TO_RUN_ERIC_BOX_V2.append(d)
 
 
 
