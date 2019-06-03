@@ -52,7 +52,7 @@ def main(
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
     if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
 
-    filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound)
+    filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof)
     if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
     params_dict['n_train'] = len(data.train_dl.dataset)
