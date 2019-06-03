@@ -12,9 +12,8 @@ class ClassUtils:
         'n03888257',
     ]
 
-    imagewoof = []
     # add later
-    iw_future = ['n02089973',
+    imagewoof = ['n02089973',
                  'n02086240',
                  'n02105641',
                  'n02087394',
