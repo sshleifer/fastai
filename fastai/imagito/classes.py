@@ -36,11 +36,11 @@ class ClassUtils:
         return classes
 
     @staticmethod
-    def filter_classes(image_list, classes=None):
+    def filter_classes(image_list, classes=None, woof=False):
         if classes is None:
             return image_list
 
-        class_names = ClassUtils.from_indices(classes)
+        class_names = ClassUtils.from_indices(classes, woof=woof)
 
         def class_filter(path):
             for class_name in class_names:
