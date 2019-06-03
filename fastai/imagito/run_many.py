@@ -2,7 +2,7 @@ from sklearn.model_selection import ParameterGrid
 from fastai.imagito.train_imagito import main
 from fastai.imagito.utils import tqdm_nice, update_batch_size
 from fastai.imagito.send_sms import try_send_sms
-from fastai.imagito.grid_const import GRID_18, NEED_TO_RUN_ERIC_BOX_V2
+from fastai.imagito.grid_const import GRID_18, C1,C2,C3, NEED_TO_RUN_ERIC_BOX_V3
 
 
 FLIP_GRID = [0., .25, .5]
@@ -28,6 +28,7 @@ BASE = {
     'lr': FINER_LR_GRID,
 }
 OPTS = ['rms', 'sgd']
+
 MOM_GRID = []
 
 
@@ -58,6 +59,12 @@ def run_many(pg):
     try_send_sms(f'Finished experiments: failures: {failures}')
 
 PGS = [pgs]
+# import fire
+# def pick_grid_and_run(c=0):
+#     [C1, C2, C3][c]
+
+
 if __name__ == '__main__':
-    run_many(reversed(NEED_TO_RUN_ERIC_BOX_V2[150:]))
+    #run_many(reversed(NEED_TO_RUN_ERIC_BOX_V2[150:]))
+    run_many(C1)
     #for pgrid in PGS: run_many(pgrid)
