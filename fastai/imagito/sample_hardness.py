@@ -118,7 +118,8 @@ import pandas as pd
 IMAGENETTE_SIZE = 12894
 
 
-_HOMES = map(Path, ['/home/shleifer/fastai/', '/home/eprokop/fastai/', '/Users/shleifer/fastai-fork/'])
+_HOMES = map(Path, ['/home/shleifer/fastai/', '/home/eprokop/fastai/', '/Users/shleifer/fastai-fork/',
+                    '/home/paperspace/fastai-fork/'])
 for HOME in _HOMES:
     if HOME.exists(): break
 PRED_DF_PATH = HOME /'fastai/imagito/pred_df.mp'

@@ -129,6 +129,15 @@ for shtuff in GRID_18:
         d['woof'] = True
         NEED_TO_RUN_ERIC_BOX_V3.append(d)
 
+NEED_TO_RUN_ERIC_BOX_V4 = []
+for arch in ['xresnet18', 'xresnet101']:
+    for _, j in STRAT2PARAMS_V2.items():
+        d = j.copy()
+        d.update(shtuff)
+        d['woof'] = True
+        NEED_TO_RUN_ERIC_BOX_V4.append(d)
+
+
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},
     'Half Classes-0.5': {'classes': halfc, 'sample': .5},
@@ -653,3 +662,5 @@ NEED_TO_RUN = [
      'flip_lr_p': 0.5,
      'hardness_lower_bound': 0.05,
      'hardness_upper_bound': 0.5}]
+
+
