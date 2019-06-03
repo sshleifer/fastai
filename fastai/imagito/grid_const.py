@@ -136,6 +136,8 @@ for arch in ['xresnet18', 'xresnet101']:
         d.update(shtuff)
         d['woof'] = True
         NEED_TO_RUN_ERIC_BOX_V4.append(d)
+
+
 stem_testers = [16, 48]
 stem_grid = [{'stem1': x} for x in stem_testers]  + [{'stem2': x} for x in stem_testers] + [{'stem1': 16, 'stem2': 16}]
 opt_grid = [{'opt': 'SGD', 'opt': 'RMS'}]
