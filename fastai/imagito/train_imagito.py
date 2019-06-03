@@ -72,10 +72,6 @@ def main(
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
 
-
-
-    # NOTE(SS): globals()[arch] raised KeyError
-
     # save params to file like experiments/2019-05-12_22:10/params.pkl
     now = get_date_str(seconds=True)
     Path('experiments').mkdir(exist_ok=True)
