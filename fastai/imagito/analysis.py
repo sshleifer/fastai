@@ -2,8 +2,10 @@ from pathlib import Path
 from fastai.imagito.nb_utils import *
 from fastai.imagito.utils import *
 import pandas as pd
-
-
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+from fastai.imagito.nb_utils import zscore, zip_to_series
+from scipy.stats import kendalltau
 
 Z_ACC_EPOCH = 'z_acc_epoch'
 
@@ -11,24 +13,35 @@ STRAT = 'sampling_strat'
 Path.ls = property(lambda self: list(self.iterdir()))
 ACCURACY = 'accuracy'
 ZACC, DATE = 'z_acc', 'date'
+NCONFIGS = 'N_configs'
+HOSTCOL = 'hostname'
 DEFAULT_LR = 0.0030
-DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof']
+DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof', 'arch']
 ALL_DATA_STRAT = 'All Classes-1.0'
+XR50 = 'xresnet_50'
+# New properties for DF
 pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
 pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
 pd.DataFrame.s128 = property(lambda df: df[df['size'] == 128])
 pd.DataFrame.ls_true = property(lambda df: df[df.label_smoothing == True])
 pd.DataFrame.full_train = property(lambda df: df[df['epochs'] == 20])
 pd.DataFrame.bm_strat = property(lambda df: df[df[STRAT] == ALL_DATA_STRAT])
+pd.DataFrame.drop_bm_strat = property(lambda df: df[df[STRAT] != ALL_DATA_STRAT])
 pd.DataFrame.ds_woof = property(lambda df: df[df['woof'] == 1])
 pd.DataFrame.imagenette =property(lambda df: df[df['woof'] == 0])
+pd.DataFrame.n_configs_geq_3 = property(lambda df: df[df[NCONFIGS] >= 3])
+pd.DataFrame.n_configs_geq_4 = property(lambda df: df[df[NCONFIGS] >= 4])
+pd.DataFrame.n_configs_geq_cut = property(lambda df: df[df[NCONFIGS] >= 25])
+pd.DataFrame.just_xr50 = property(lambda df: df[df['arch'] == XR50])
+
 
 def best_epoch(df):
     gb = df.groupby('date')
-    return gb.first().assign(accuracy=df.groupby('date').accuracy.max())#.pipe(drop_zero_variance_cols)
+    exp_df = gb.first().assign(
+        accuracy=gb.accuracy.max(), epochs_run=gb.epoch.max()+1, cost=gb['seconds'].sum())
+    return exp_df[exp_df['epochs_run'] == exp_df['epochs']]
 
 pd.DataFrame.exp_df = property(best_epoch)
-
 
 def safe_concat(*args, **kwargs):
     if 'sort' in kwargs:
@@ -36,12 +49,20 @@ def safe_concat(*args, **kwargs):
     else:
         return pd.concat(*args, sort=False, **kwargs)
 
+
+def check_killed_early(df, cutoff=1):
+    actual_epochs = (df.groupby(DATE).epoch.max() + 1).to_frame('epochs_run').assign(
+        intended=df.groupby(DATE).epochs.first())
+    msk = actual_epochs['intended'] - actual_epochs['epochs_run']
+    print(f'{(msk >=cutoff).sum()}/ {msk.shape[0]} killed early. They are tossed in exp_df')
+    killed_early = actual_epochs.loc[msk >= cutoff]
+    return killed_early
+
 def tryfloat(x):
-    try: return x.astype(float)
-    except Exception: return x
-
-
-
+    try:
+        return x.astype(float)
+    except Exception:
+        return x
 
 def drop_zero_variance_cols(df):
     keep_col_mask = df.apply(lambda x: x.nunique()) > 1
@@ -96,18 +117,9 @@ def preprocess_and_assign_strat(df):
     df['woof'] = df['woof'].replace({True: 1})
     return df
 
-
-
-
-
-
-
-
 def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
     gb_size = df.groupby([STRAT] + config_cols).size().unstack(config_cols)
     return gb_size.loc[[strat, baseline]].dropna(axis=1, how='all')
-
-
 
 def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
     df = df.bm_strat
@@ -119,9 +131,8 @@ def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
     ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
     return ax
 
-
-def make9_19_data(df, acc_col):
-    ep9 = df.e9.set_index(DATE)
+def make9_19_data(df, acc_col=ACCURACY, ref_epoch=10):
+    ep9 = df[df['epoch'] == ref_epoch - 1].set_index(DATE)
     ep19 = df.e19.set_index(DATE)
     pl = ep9.rename(columns={acc_col: 'proxy'}).assign(targ=ep19[acc_col])
     corr = pl.corr().loc['targ', 'proxy']
@@ -136,8 +147,6 @@ Y_COL = "Target Boost (SD)"
 TIT_COL = 'Changeset'
 CAT_NAME = 'Proxy Strategy'
 posc, allc = 'Positive Changes','All Changes'
-
-ls_mask = lambda df: df.label_smoothing
 
 def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS,  agg_col = Z_ACC_EPOCH):
     agger = lambda df: df.groupby(gb_lst)[agg_col].median()
@@ -154,24 +163,68 @@ def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS,  agg_col = Z_ACC_EPOCH):
     return cmb, tab_2
 
 
-def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=Z_ACC_EPOCH):
-    agger = lambda df: df.groupby(_gb)[agg_col].median()
-    best_pars = exp_df.pipe(agger).unstack(level=DEFAULT_CONFIG_COLS).idxmax(1)
+def get_stats(grp, agg_col=ACCURACY):
+    """"""
+    x = grp[agg_col]
+    y = grp[Y_COL]
+    tau, pval = kendalltau(x.rank(), y.rank())
+    return pval
+
+
+def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     pgb = exp_df.groupby(_gb)
+
     all_proxy = pgb[agg_col].median().reset_index(level=0)
     all_proxy[Y_COL] = exp_df.bm_strat.groupby(DEFAULT_CONFIG_COLS)[agg_col].median()
-    n_experiments = all_proxy.groupby(STRAT).apply(lambda x: x[[Y_COL, agg_col]].dropna().shape[0])
-    all_coors = all_proxy.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col]))
-    all_pos_coors = all_proxy[all_proxy[agg_col] > 0].groupby(STRAT).apply(
-        lambda x: x[Y_COL].corr(x[agg_col]))
-    cor_tab = all_coors.to_frame(allc).join(all_pos_coors.to_frame(posc)).round(2).pipe(
-        blind_descending_sort)
-    cor_tab['Best Params'] = best_pars#.dropna().apply(lambda x: f'lr={x[0]}, size={x[1]}')
-    cor_tab['N Experiments'] = n_experiments.fillna(0).astype(int)
-    return cor_tab
+    strat_mean = 'strat_mean'
+    all_proxy[strat_mean] = all_proxy.groupby(STRAT)[agg_col].transform('median')
+    gb_corr = lambda df: df.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col]))
+    all_coors = gb_corr(all_proxy)
+    #print(all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]].shape[0] / all_proxy.shape[0])
+    all_pos_coors = gb_corr(all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]])
+    cor_tab = all_coors.to_frame(allc).join(all_pos_coors.to_frame(posc)).round(3)
+
+    agger = lambda df: df.groupby(_gb)[agg_col].median()
+    _res_df = exp_df.pipe(agger).unstack(level=DEFAULT_CONFIG_COLS)
+    bm_perf = _res_df.loc[ALL_DATA_STRAT]
+    cor_tab['Best on Proxy'], cor_tab['Max Proxy Acc'] = _res_df.idxmax(1), _res_df.max(1).round(3)
+    cor_tab['BM Acc for Pars'] = [bm_perf.loc[x] for x in cor_tab['Best on Proxy'].values.tolist()]
+    cor_tab['Proxy Truth Rank'] = _res_df.rank(1, ascending=False)[bm_perf.idxmax()]
+    cor_tab['Regret'] = bm_perf.max() - cor_tab['BM Acc for Pars']
+    tab =  cor_tab.join(run_grouped_regs(exp_df))
+    tab['Seconds'] = exp_df.s128.just_xr50.groupby(STRAT)['cost'].median()
+    return tab
+
+
+
+def regress_aligned_pairs(exp_df, proxy_strat):
+    # find all configs that were run for proxy and also run for target.
+    # group both into one row per config
+    agg_df = lambda df: df.groupby(DEFAULT_CONFIG_COLS)['accuracy'].median()
+    y = exp_df[exp_df[STRAT] == ALL_DATA_STRAT].pipe(agg_df).to_frame('y')
+    x = exp_df[exp_df[STRAT] == proxy_strat].pipe(agg_df).to_frame('X')
+    xy = y.join(x, how='inner').pipe(zscore)
+    if xy.shape[0] <= 1 or xy['X'].isnull().all():
+        return pd.Series({NCONFIGS: xy.shape[0], STRAT: proxy_strat})
+    clf = LinearRegression().fit(xy[['X']], xy['y'])
+    coefs = zip_to_series(['X'], clf.coef_)
+    coefs.loc['r2'] = r2_score(xy['y'], clf.predict(xy[['X']]))
+    coefs.loc[NCONFIGS] = xy.shape[0]
+    coefs.loc[STRAT] = proxy_strat
+    return coefs
+
+
+def run_grouped_regs(exp_df):
+    all_strats = exp_df[STRAT].unique()
+    reg_results = pd.DataFrame([regress_aligned_pairs(exp_df, strat) for strat in all_strats])
+    reg_results = reg_results.round(2)
+    reg_results['N_configs'] = reg_results['N_configs'].astype(int)
+    return reg_results.rename(columns={'X': 'coeff'}).set_index(STRAT)
+
 
 import seaborn as sns
 sns.set(color_codes=True)
+
 
 
 def make_change_scatters(df):
