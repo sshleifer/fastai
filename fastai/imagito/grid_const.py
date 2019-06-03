@@ -71,7 +71,6 @@ STRAT2PARAMS_V2 = {
     'Half Classes-0.7': {'classes': [0, 1, 2, 3, 4], 'sample': 0.7},
     'Half Classes-1.0': {'classes': [0, 1, 2, 3, 4], 'sample': 1.0},
     'Other Half Classes-1.0': {'classes': [5, 6, 7, 8, 9], 'sample': 1.0},
-    'distillation': {},
     'hard-0.0-0.1': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.1},
     'hard-0.0-0.25': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.25},
     'hard-0.0-0.5': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.5},
