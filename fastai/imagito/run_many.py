@@ -49,6 +49,7 @@ for extra in [a, b,c]:
 
 def run_many(pg):
     # try_send_sms(f'Starting {len(pg)} experiments: Params\n {pg}')
+    print(f'N experiments = {len(pg)}')
     failures = []
     for pars in tqdm_nice(pg):
         try:
@@ -65,6 +66,7 @@ PGS = [pgs]
 
 
 if __name__ == '__main__':
+
     run_many(NEED_TO_RUN_ERIC_BOX_V3)
     #run_many(C1)
     #for pgrid in PGS: run_many(pgrid)
