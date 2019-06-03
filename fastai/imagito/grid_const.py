@@ -133,7 +133,7 @@ NEED_TO_RUN_ERIC_BOX_V4 = []
 for arch in ['xresnet18', 'xresnet101']:
     for _, j in STRAT2PARAMS_V2.items():
         d = j.copy()
-        d.update(shtuff)
+        d['arch'] = arch
         d['woof'] = True
         NEED_TO_RUN_ERIC_BOX_V4.append(d)
 
@@ -150,10 +150,17 @@ for shtuff in stem_grid + opt_grid:
     for _, j in STRAT2PARAMS_V3.items():
         d = j.copy()
         d.update(shtuff)
-        NEW_FUN_NO_WOOF.append(d)
+        NEW_FUN_NO_WOOF.append(d.copy())
         dwoof = d.copy()
         dwoof['woof'] = True
         NEW_FUN_WOOF.append(dwoof)
+    bm = {'classes': None, 'sample': 1.0},
+    bm.update(shtuff)
+    NEW_FUN_NO_WOOF.append(bm.copy())
+    bm['woof'] = True
+    NEW_FUN_WOOF.append(bm)
+
+
 
 
 
