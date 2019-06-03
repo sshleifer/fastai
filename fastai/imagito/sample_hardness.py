@@ -133,6 +133,8 @@ def make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof):
     > hardness_bounds = (.75, 1.)  # top 25 % easiest
     """
     path = PRED_DF_PATH if not woof else WOOF_PRED_DF_PATH
+    if (hardness_lower_bound == 0) and (hardness_upper_bound==1.):
+        return return_true
     pred_df = pd.read_msgpack(path).sort_values('loss', ascending=False)
     start_idx, end_idx = int(IMAGENETTE_SIZE * hardness_lower_bound), int(
         IMAGENETTE_SIZE * hardness_upper_bound) - 1
