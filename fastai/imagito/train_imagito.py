@@ -42,7 +42,7 @@ def main(
         hardness_lower_bound: Param("h1", float)=0., hardness_upper_bound: Param("h1", float)=1.,
         save=False,
         flip_lr_p=0.5,
-        stem1=32, stem2=32,
+        stem1: Param('nchan for xresnet', int)=32, stem2: Param('nchan for xresnet', int)=32,
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
