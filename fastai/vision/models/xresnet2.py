@@ -85,12 +85,12 @@ def conv2d(ni, nf, stride):
 
 class XResNet(nn.Module):
 
-    def __init__(self, block, layers, c_out=1000):
+    def __init__(self, block, layers, c_out=1000, stem1=32, stem2=32):
         self.inplanes = 64
         super(XResNet, self).__init__()
-        self.conv1 = conv2d(3, 32, 2)
-        self.conv2 = conv2d(32, 32, 1)
-        self.conv3 = conv2d(32, 64, 1)
+        self.conv1 = conv2d(3, stem1, 2)
+        self.conv2 = conv2d(stem1, stem2, 1)
+        self.conv3 = conv2d(stem2, 64, 1)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)

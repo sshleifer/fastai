@@ -27,6 +27,9 @@ def get_18(sampling_dct):
 BASE = {
     'lr': FINER_LR_GRID,
 }
+OPTS = ['rms', 'sgd']
+MOM_GRID = []
+
 
 HUB_GRID = [.1, .75, .5, .25]
 HLB_GRID = [.9, .75, .5, .25]
