@@ -51,7 +51,7 @@ def run_many(pg):
             main(**pars)
         except Exception as e:
             failures.append(pars)
-            print(e)
+            print(e, pars)
     try_send_sms(f'Finished experiments: failures: {failures}')
 
 PGS = [pgs]

@@ -92,7 +92,12 @@ STRAT2PARAMS_V3 = {
     'hard-0.25-1.0': {'hardness_lower_bound': 0.25, 'hardness_upper_bound': 1.0},
     'hard-0.5-1.0': {'hardness_lower_bound': 0.5, 'hardness_upper_bound': 1.0},
     'hard-0.75-1.0': {'hardness_lower_bound': 0.75, 'hardness_upper_bound': 1.0},
-    'hard-0.9-1.0': {'hardness_lower_bound': 0.9, 'hardness_upper_bound': 1.0}
+    'hard-0.9-1.0': {'hardness_lower_bound': 0.9, 'hardness_upper_bound': 1.0},
+    'Half Classes-0.1': {'classes': [0, 1, 2, 3, 4], 'sample': 0.1},
+    'Half Classes-0.25': {'classes': [0, 1, 2, 3, 4], 'sample': 0.25},
+    'Half Classes-0.5': {'classes': [0, 1, 2, 3, 4], 'sample': 0.5},
+    'Half Classes-0.7': {'classes': [0, 1, 2, 3, 4], 'sample': 0.7},
+    'Half Classes-1.0': {'classes': [0, 1, 2, 3, 4], 'sample': 1.0},
 }
 
 arches = {'arch': ['xresnet18', 'xresnet101', 'presnet18']}

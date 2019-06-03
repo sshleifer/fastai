@@ -12,9 +12,19 @@ class ClassUtils:
         'n03888257',
     ]
 
-    imagewoof = [
-        # TODO
-    ]
+    imagewoof = []
+    # add later
+    iw_future = ['n02089973',
+                 'n02086240',
+                 'n02105641',
+                 'n02087394',
+                 'n02099601',
+                 'n02115641',
+                 'n02093754',
+                 'n02111889',
+                 'n02096294',
+                 'n02088364'
+                 ]
 
     @staticmethod
     def from_indices(indices, woof=False):
