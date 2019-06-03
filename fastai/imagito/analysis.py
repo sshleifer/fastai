@@ -224,10 +224,10 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
         lambda x: get_stats(x, agg_col=agg_col)).round(3)
     cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(
         lambda x: get_stats(x, agg_col=agg_col)).round(3)
-    cor_tab['Pacc2'] = pos_proxy.groupby(STRAT).apply(
-        lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
-    cor_tab['Pacc2b'] = pos_proxy.groupby(STRAT).apply(
-        lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
+    # cor_tab['Pacc2'] = pos_proxy.groupby(STRAT).apply(
+    #     lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
+    # cor_tab['Pacc2b'] = pos_proxy.groupby(STRAT).apply(
+    #     lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
 
     agger = lambda df: df.groupby(_gb)[agg_col].median()
     _res_df = exp_df.pipe(agger).unstack(level=DEFAULT_CONFIG_COLS)
@@ -239,7 +239,6 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     tab = cor_tab.join(run_grouped_regs(exp_df))
     tab['Seconds'] = exp_df.s128.just_xr50.groupby(STRAT)['cost'].median()
     return tab
-
 
 def regress_aligned_pairs(exp_df, proxy_strat):
     # find all configs that were run for proxy and also run for target.
