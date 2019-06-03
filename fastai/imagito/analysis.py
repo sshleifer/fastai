@@ -41,12 +41,13 @@ pd.DataFrame.just_xr18 = property(lambda df: df[df['arch'] == XR18])
 pd.DataFrame.ep_strat = property(lambda df: df[df[STRAT].str.contains('ep')])
 WOOF_SIZE = 12454
 
-
+ADJ_ACC = 'ADJ_ACC'
 
 def best_epoch(df):
     gb = df.groupby(('date', HOSTCOL))
     exp_df = gb.first().assign(
         accuracy=gb.accuracy.max(), epochs_run=gb.epoch.max() + 1, cost=gb['seconds'].sum())
+    exp_df[ADJ_ACC] = exp_df.groupby(('size', 'woof'))[ACCURACY].transform(zscore)
     return exp_df[exp_df['epochs_run'] == exp_df['epochs']]
 
 
@@ -114,6 +115,20 @@ def combine(metric_df, param_df):
 
 EPSTRATS = ['All Classes-1.0-ep5', 'All Classes-1.0-ep1', 'All Classes-1.0-ep10']
 META_STRAT = 'META_STRAT'
+easy = 'Easy Examples'
+hard = 'Hard Examples'
+hard_clip = 'Hard Examples (*)'
+STRAT2DIFFICULTY = {
+    'hard-0.75-1.0': easy ,
+ 'hard-0.0-0.75': hard,
+ 'hard-0.5-1.0': easy,
+ 'hard-0.9-1.0': easy,
+ 'hard-0.0-0.5': hard,
+ 'hard-0.0-0.1': hard,
+ 'hard-0.0-0.25': hard,
+ 'hard-0.05-0.5': hard_clip,
+ 'hard-0.25-1.0': easy}
+
 def preprocess_and_assign_strat(df):
     DS_PATH = 'ds_path'
     df['_hardness_str'] = df.apply(
@@ -140,7 +155,8 @@ def preprocess_and_assign_strat(df):
 def assign_meta_strat(x:str):
     if x in EPSTRATS: return 'EP'
     if x==ALL_DATA_STRAT: return 'Baseline'
-    if x.startswith('hard'): return 'Hardness Filter'
+    if x.startswith('hard'):
+        return STRAT2DIFFICULTY[x]
     if x.startswith('Half Classes') or x.startswith('Other Half Classes'):
         if x.endswith('-1.0'): return 'Half Classes'
         else: return ('Half Classes-Some Data')
@@ -267,17 +283,17 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     cor_tab['BM Acc for Pars'] = [bm_perf.loc[x] for x in cor_tab['Best on Proxy'].values.tolist()]
     cor_tab['Proxy Truth Rank'] = _res_df.rank(1, ascending=False)[bm_perf.idxmax()]
     cor_tab['Regret'] = bm_perf.max() - cor_tab['BM Acc for Pars']
-    tab = cor_tab.join(run_grouped_regs(exp_df))
+    tab = cor_tab.join(run_grouped_regs(exp_df, agg_col=agg_col))
     tab['Seconds'] = (exp_df.s128.just_xr50.groupby(STRAT)['cost'].median())
     # maybe do n_train * epochs or something
-    tab['Relative Cost'] = tab['Seconds'] / 473.
-    tab[META_STRAT] = [S2META[x] for x in tab.index]
+    tab['Relative Cost'] = (tab['Seconds'] / 473.).round(2)
+    tab[META_STRAT] = [assign_meta_strat(x) for x in tab.index]
     return tab
 
-def regress_aligned_pairs(exp_df, proxy_strat):
+def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
     # find all configs that were run for proxy and also run for target.
     # group both into one row per config
-    agg_df = lambda df: df.groupby(DEFAULT_CONFIG_COLS)['accuracy'].median()
+    agg_df = lambda df: df.groupby(DEFAULT_CONFIG_COLS)[agg_col].median()
     y = exp_df[exp_df[STRAT] == ALL_DATA_STRAT].pipe(agg_df).to_frame('y')
     x = exp_df[exp_df[STRAT] == proxy_strat].pipe(agg_df).to_frame('X')
     xy = y.join(x, how='inner').pipe(zscore)
@@ -291,9 +307,9 @@ def regress_aligned_pairs(exp_df, proxy_strat):
     return coefs
 
 
-def run_grouped_regs(exp_df):
+def run_grouped_regs(exp_df, agg_col=ACCURACY):
     all_strats = exp_df[STRAT].unique()
-    reg_results = pd.DataFrame([regress_aligned_pairs(exp_df, strat) for strat in all_strats])
+    reg_results = pd.DataFrame([regress_aligned_pairs(exp_df, strat, agg_col=agg_col) for strat in all_strats])
     reg_results = reg_results.round(2)
     reg_results['N_configs'] = reg_results['N_configs'].astype(int)
     return reg_results.rename(columns={'X': 'coeff'}).set_index(STRAT)
