@@ -19,6 +19,7 @@ fastprogress.MAX_COLS = 80
 
 HOSTNAME = socket.gethostname()
 
+
 @call_parse
 def main(
         gpu:Param("GPU to run on", str)=None,
@@ -41,10 +42,12 @@ def main(
         hardness_lower_bound: Param("h1", float)=0., hardness_upper_bound: Param("h1", float)=1.,
         save=False,
         flip_lr_p=0.5,
+        stem1: Param('nchan for xresnet', int)=32, stem2: Param('nchan for xresnet', int)=32,
+        inplanes: Param('nchan for xresnet', int)=64,
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
-    m = xresnet50_2 if arch is None else globals()[arch]
+
     gpu = setup_distrib(gpu)
     if gpu is None: bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
@@ -55,18 +58,18 @@ def main(
     filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof)
     if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
+    n_classes = len(classes) if classes is not None else 10
+    m = xresnet50_2 if arch is None else globals()[arch]
+    mod = m(c_out=n_classes, stem1=stem1, stem2=stem2, inplanes=inplanes)
     params_dict['n_train'] = len(data.train_dl.dataset)
     params_dict['n_val'] = len(data.valid_dl.dataset)
     params_dict['hostname'] = HOSTNAME
+    params_dict['n_classes'] = n_classes
 
     bs_rat = bs/256
     if gpu is not None: bs_rat *= num_distrib()
     if not gpu: print(f'lr: {lr}; eff_lr: {lr*bs_rat}; size: {size}; alpha: {alpha}; mom: {mom}; eps: {eps}')
     lr *= bs_rat
-
-
-
-    # NOTE(SS): globals()[arch] raised KeyError
 
     # save params to file like experiments/2019-05-12_22:10/params.pkl
     now = get_date_str(seconds=True)
@@ -74,9 +77,10 @@ def main(
     model_dir = Path(f'experiments/{now}_{HOSTNAME}')
     model_dir.mkdir(exist_ok=False)
     pickle_save(params_dict, model_dir/'params.pkl')
-    n_classes = len(classes) if classes is not None else 10
+
     loss_func = LabelSmoothingCrossEntropy() if label_smoothing else nn.CrossEntropyLoss()
-    learn = Learner(data, m(c_out=n_classes), wd=1e-2, opt_func=opt_func,
+
+    learn = Learner(data, mod, wd=1e-2, opt_func=opt_func,
                     path=model_dir,
                     metrics=[accuracy],
                     bn_wd=False, true_wd=True,

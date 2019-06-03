@@ -57,11 +57,11 @@ STRAT2PARAMS_V2 = {
     # '2Classes-0.1': {'classes': [0, 1], 'sample': 0.1},
     # '2Classes-0.5': {'classes': [0, 1], 'sample': 0.5},
     # '2Classes-1.0': {'classes': [0, 1], 'sample': 1.0},
+    'All Classes-1.0': {'classes': None, 'sample': 1.0},
     'All Classes-0.1': {'classes': None, 'sample': 0.1},
     'All Classes-0.25': {'classes': None, 'sample': 0.25},
     'All Classes-0.5': {'classes': None, 'sample': 0.5},
     'All Classes-0.7': {'classes': None, 'sample': 0.7},
-    'All Classes-1.0': {'classes': None, 'sample': 1.0},
     'All Classes-1.0-ep1': {'epochs': 1, 'classes': None, 'sample': 1.0},
     'All Classes-1.0-ep10': {'epochs': 10, 'classes': None, 'sample': 1.0},
     'All Classes-1.0-ep5': {'epochs': 5, 'classes': None, 'sample': 1.0},
@@ -71,7 +71,6 @@ STRAT2PARAMS_V2 = {
     'Half Classes-0.7': {'classes': [0, 1, 2, 3, 4], 'sample': 0.7},
     'Half Classes-1.0': {'classes': [0, 1, 2, 3, 4], 'sample': 1.0},
     'Other Half Classes-1.0': {'classes': [5, 6, 7, 8, 9], 'sample': 1.0},
-    'distillation': {},
     'hard-0.0-0.1': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.1},
     'hard-0.0-0.25': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.25},
     'hard-0.0-0.5': {'hardness_lower_bound': 0.0, 'hardness_upper_bound': 0.5},
@@ -128,6 +127,16 @@ for shtuff in GRID_18:
         d.update(shtuff)
         d['woof'] = True
         NEED_TO_RUN_ERIC_BOX_V3.append(d)
+
+NEED_TO_RUN_ERIC_BOX_V4 = []
+for arch in ['xresnet18', 'xresnet101']:
+    for _, j in STRAT2PARAMS_V2.items():
+        d = j.copy()
+        d['arch'] = arch
+        d['woof'] = True
+        NEED_TO_RUN_ERIC_BOX_V4.append(d)
+
+
 
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},
@@ -653,3 +662,5 @@ NEED_TO_RUN = [
      'flip_lr_p': 0.5,
      'hardness_lower_bound': 0.05,
      'hardness_upper_bound': 0.5}]
+
+

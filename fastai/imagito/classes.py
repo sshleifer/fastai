@@ -12,19 +12,19 @@ class ClassUtils:
         'n03888257',
     ]
 
-    imagewoof = []
     # add later
-    iw_future = ['n02089973',
-                 'n02086240',
-                 'n02105641',
-                 'n02087394',
-                 'n02099601',
-                 'n02115641',
-                 'n02093754',
-                 'n02111889',
-                 'n02096294',
-                 'n02088364'
-                 ]
+    imagewoof = [
+        'n02089973',
+        'n02086240',
+        'n02105641',
+        'n02087394',
+        'n02099601',
+        'n02115641',
+        'n02093754',
+        'n02111889',
+        'n02096294',
+        'n02088364'
+    ]
 
     @staticmethod
     def from_indices(indices, woof=False):
@@ -37,11 +37,11 @@ class ClassUtils:
         return classes
 
     @staticmethod
-    def filter_classes(image_list, classes=None):
+    def filter_classes(image_list, classes=None, woof=False):
         if classes is None:
             return image_list
 
-        class_names = ClassUtils.from_indices(classes)
+        class_names = ClassUtils.from_indices(classes, woof=woof)
 
         def class_filter(path):
             for class_name in class_names:

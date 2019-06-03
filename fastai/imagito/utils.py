@@ -55,7 +55,7 @@ def get_data(size, woof, bs, sample, classes=None, workers=None, shuffle_train=T
     if workers is None: workers = min(8, num_cpus()//n_gpus)
 
     image_list = ImageList.from_folder(path)
-    image_list = ClassUtils.filter_classes(image_list, classes)
+    image_list = ClassUtils.filter_classes(image_list, classes, woof)
 
     return (image_list
             .filter_by_func(filter_func)
