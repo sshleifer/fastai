@@ -137,6 +137,48 @@ for arch in ['xresnet18', 'xresnet101']:
         NEED_TO_RUN_ERIC_BOX_V4.append(d)
 
 
+GRID_STEMS_AND_OPT_WOOF = [
+    {'opt': 'adam', 'stem1': 4, 'stem2': 4, 'woof': True},
+ {'opt': 'adam', 'stem1': 4, 'stem2': 32, 'woof': True},
+ {'opt': 'adam', 'stem1': 4, 'stem2': 48, 'woof': True},
+ {'opt': 'adam', 'stem1': 32, 'stem2': 4, 'woof': True},
+ {'opt': 'adam', 'stem1': 32, 'stem2': 48, 'woof': True},
+ {'opt': 'adam', 'stem1': 48, 'stem2': 4, 'woof': True},
+ {'opt': 'adam', 'stem1': 48, 'stem2': 32, 'woof': True},
+ {'opt': 'adam', 'stem1': 48, 'stem2': 48, 'woof': True},
+ {'opt': 'sgd', 'stem1': 4, 'stem2': 4, 'woof': True},
+ {'opt': 'sgd', 'stem1': 4, 'stem2': 32, 'woof': True},
+ {'opt': 'sgd', 'stem1': 4, 'stem2': 48, 'woof': True},
+ {'opt': 'sgd', 'stem1': 32, 'stem2': 4, 'woof': True},
+ {'opt': 'sgd', 'stem1': 32, 'stem2': 32, 'woof': True},
+ {'opt': 'sgd', 'stem1': 32, 'stem2': 48, 'woof': True},
+ {'opt': 'sgd', 'stem1': 48, 'stem2': 4, 'woof': True},
+ {'opt': 'sgd', 'stem1': 48, 'stem2': 32, 'woof': True},
+ {'opt': 'sgd', 'stem1': 48, 'stem2': 48, 'woof': True},
+ {'opt': 'rms', 'stem1': 4, 'stem2': 4, 'woof': True},
+ {'opt': 'rms', 'stem1': 4, 'stem2': 32, 'woof': True},
+ {'opt': 'rms', 'stem1': 4, 'stem2': 48, 'woof': True},
+ {'opt': 'rms', 'stem1': 32, 'stem2': 4, 'woof': True},
+ {'opt': 'rms', 'stem1': 32, 'stem2': 32, 'woof': True},
+ {'opt': 'rms', 'stem1': 32, 'stem2': 48, 'woof': True},
+ {'opt': 'rms', 'stem1': 48, 'stem2': 4, 'woof': True},
+ {'opt': 'rms', 'stem1': 48, 'stem2': 32, 'woof': True},
+ {'opt': 'rms', 'stem1': 48, 'stem2': 48, 'woof': True}
+]
+
+FULL_GRID_SWOOF = []
+def dict_merge(a,b):
+    new = a.copy()
+    for k,v in b.items():
+        assert k not in a
+        new[k] = v
+    return new
+for g in GRID_STEMS_AND_OPT_WOOF:
+    for name, strat in STRAT2PARAMS_V2.items():
+        FULL_GRID_SWOOF.append(dict_merge(g, strat))
+#print(len(FULL_GRID_SWOOF))
+
+
 
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},

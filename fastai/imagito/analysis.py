@@ -16,9 +16,12 @@ ZACC, DATE = 'z_acc', 'date'
 NCONFIGS = 'N_configs'
 HOSTCOL = 'hostname'
 DEFAULT_LR = 0.0030
-DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof', 'arch']
+DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof', 'arch', 'stem1',
+                       'stem2', 'opt']
 ALL_DATA_STRAT = 'All Classes-1.0'
 XR50 = 'xresnet_50'
+XR18 = 'xresnet_18'
+
 # New properties for DF
 pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
 pd.DataFrame.e9 = property(lambda df: df[df.epoch == 9])
@@ -34,12 +37,14 @@ pd.DataFrame.n_configs_geq_4 = property(lambda df: df[df[NCONFIGS] >= 4])
 pd.DataFrame.n_configs_geq_18 = property(lambda df: df[df[NCONFIGS] >= 18])
 pd.DataFrame.n_configs_geq_cut = property(lambda df: df[df[NCONFIGS] >= 25])
 pd.DataFrame.just_xr50 = property(lambda df: df[df['arch'] == XR50])
-
+pd.DataFrame.just_xr18 = property(lambda df: df[df['arch'] == XR18])
+pd.DataFrame.ep_strat = property(lambda df: df[df[STRAT].str.contains('ep')])
 WOOF_SIZE = 12454
 
 
+
 def best_epoch(df):
-    gb = df.groupby('date')
+    gb = df.groupby(('date', HOSTCOL))
     exp_df = gb.first().assign(
         accuracy=gb.accuracy.max(), epochs_run=gb.epoch.max() + 1, cost=gb['seconds'].sum())
     return exp_df[exp_df['epochs_run'] == exp_df['epochs']]
@@ -107,7 +112,8 @@ def combine(metric_df, param_df):
                          on=['date', 'hostname'])
     return df
 
-
+EPSTRATS = ['All Classes-1.0-ep5', 'All Classes-1.0-ep1', 'All Classes-1.0-ep10']
+META_STRAT = 'META_STRAT'
 def preprocess_and_assign_strat(df):
     DS_PATH = 'ds_path'
     df['_hardness_str'] = df.apply(
@@ -127,7 +133,21 @@ def preprocess_and_assign_strat(df):
     # Path Hardness bug
     msk = ((df['woof']) & (df['n_train'] == WOOF_SIZE) & (df[STRAT].str.startswith('hard')))
     df.loc[msk, STRAT] = ALL_DATA_STRAT
+    df[META_STRAT] = df[STRAT].apply(assign_meta_strat)
     return df
+
+
+def assign_meta_strat(x:str):
+    if x in EPSTRATS: return 'EP'
+    if x==ALL_DATA_STRAT: return 'Baseline'
+    if x.startswith('hard'): return 'Hardness Filter'
+    if x.startswith('Half Classes') or x.startswith('Other Half Classes'):
+        if x.endswith('-1.0'): return 'Half Classes'
+        else: return ('Half Classes-Some Data')
+    if x.startswith('All Classes'): return 'Random Sample'
+    else: return x
+
+
 
 
 def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
@@ -221,9 +241,20 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     cor_tab['KT Pval'] = all_proxy.groupby(STRAT).apply(
         lambda x: get_stats(x, agg_col=agg_col)).round(3)
     cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(
-        lambda x: get_stats(x, agg_col=agg_col)).round(3)
+        lambda x: get_stats(x, agg_col=agg_col))
+    # #print(all_proxy.head())
+    # #woof_ct = all_proxy.groupby((STRAT, 'woof')).size().unstack()
+    #
+    # #woof_frac = woof_ct /woof_ct.sum(1)
+    #
+    # kt_woof = all_proxy.reset_index().ds_woof.groupby(STRAT).apply(
+    #     lambda x: get_stats(x, agg_col=agg_col)
+    # )#.unstack().fillna(0.) * woof_frac.fillna(0.)
+    # print(kt_woof).shape
+
     cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(
-        lambda x: get_stats(x, agg_col=agg_col)).round(3)
+        lambda x: get_stats(x, agg_col=agg_col))
+    cor_tab = cor_tab.round(3)
     # cor_tab['Pacc2'] = pos_proxy.groupby(STRAT).apply(
     #     lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
     # cor_tab['Pacc2b'] = pos_proxy.groupby(STRAT).apply(
@@ -237,7 +268,10 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     cor_tab['Proxy Truth Rank'] = _res_df.rank(1, ascending=False)[bm_perf.idxmax()]
     cor_tab['Regret'] = bm_perf.max() - cor_tab['BM Acc for Pars']
     tab = cor_tab.join(run_grouped_regs(exp_df))
-    tab['Seconds'] = exp_df.s128.just_xr50.groupby(STRAT)['cost'].median()
+    tab['Seconds'] = (exp_df.s128.just_xr50.groupby(STRAT)['cost'].median())
+    # maybe do n_train * epochs or something
+    tab['Relative Cost'] = tab['Seconds'] / 473.
+    tab[META_STRAT] = [S2META[x] for x in tab.index]
     return tab
 
 def regress_aligned_pairs(exp_df, proxy_strat):
@@ -273,6 +307,9 @@ def fld_getter(fld):
 
 pd.DataFrame.get_strat = get_strat
 pd.DataFrame.get_lr = fld_getter('lr')
+pd.DataFrame.get_strat = fld_getter(STRAT)
+pd.DataFrame.get_meta_strat = fld_getter(META_STRAT)
+pd.DataFrame.gb = pd.DataFrame.groupby
 #pd.DataFrame.get_lr = fld_getter('lr')
 
 import seaborn as sns
@@ -309,3 +346,58 @@ def make_change_scatters(df):
     tab = pd.concat([c1, c2], axis=1)
     tab.index = tab.index.get_level_values(0)
     return fg, tab  # .pipe(blind_descending_sort)
+
+RS = 'Random Sample'
+HF = 'Hardness Filter'
+META_TO_STRAT = {'Baseline': ['All Classes-1.0'],
+                 'Half Classes-Some Data': ['Half Classes-0.1',
+                                            'Half Classes-0.25',
+                                            'Half Classes-0.7',
+                                            'Half Classes-0.5'],
+                 'EP': ['All Classes-1.0-ep10', 'All Classes-1.0-ep5', 'All Classes-1.0-ep1'],
+                 'Hardness Filter': ['hard-0.75-1.0',
+                                     'hard-0.0-0.75',
+                                     'hard-0.5-1.0',
+                                     'hard-0.9-1.0',
+                                     'hard-0.0-0.1',
+                                     'hard-0.0-0.5',
+                                     'hard-0.0-0.25',
+                                     'hard-0.05-0.5',
+                                     'hard-0.25-1.0'],
+                 'Random Sample': ['All Classes-0.7',
+                                   'All Classes-0.5',
+                                   'All Classes-0.25',
+                                   'All Classes-0.1'],
+                 'distillation': ['distillation'],
+                 'Half Classes': ['Half Classes-1.0', 'Other Half Classes-1.0'],
+                 '2Classes-0.1': ['2Classes-0.1'],
+                 '2Classes-1.0': ['2Classes-1.0'],
+                 '2Classes-0.5': ['2Classes-0.5']}
+
+S2META = {'All Classes-1.0': 'Baseline',
+          'Half Classes-0.1': 'Half Classes-Some Data',
+          'All Classes-1.0-ep10': 'EP',
+          'Half Classes-0.25': 'Half Classes-Some Data',
+          'All Classes-1.0-ep5': 'EP',
+          'hard-0.75-1.0': 'Hardness Filter',
+          'Half Classes-0.7': 'Half Classes-Some Data',
+          'All Classes-0.7': 'Random Sample',
+          'All Classes-1.0-ep1': 'EP',
+          'hard-0.0-0.75': 'Hardness Filter',
+          'hard-0.5-1.0': 'Hardness Filter',
+          'hard-0.9-1.0': 'Hardness Filter',
+          'hard-0.0-0.1': 'Hardness Filter',
+          'All Classes-0.5': 'Random Sample',
+          'Half Classes-0.5': 'Half Classes-Some Data',
+          'distillation': 'distillation',
+          'hard-0.0-0.5': 'Hardness Filter',
+          'Half Classes-1.0': 'Half Classes',
+          'hard-0.0-0.25': 'Hardness Filter',
+          'hard-0.05-0.5': 'Hardness Filter',
+          'Other Half Classes-1.0': 'Half Classes',
+          'hard-0.25-1.0': 'Hardness Filter',
+          'All Classes-0.25': 'Random Sample',
+          'All Classes-0.1': 'Random Sample',
+          '2Classes-0.1': '2Classes-0.1',
+          '2Classes-1.0': '2Classes-1.0',
+          '2Classes-0.5': '2Classes-0.5'}
