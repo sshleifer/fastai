@@ -147,5 +147,3 @@ def make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof):
     paths_to_toss = all_paths.difference(paths_to_keep)
     filter_func = lambda x: str(os.path.basename(x)) not in paths_to_toss  # ignores val paths
     return filter_func
-
-
