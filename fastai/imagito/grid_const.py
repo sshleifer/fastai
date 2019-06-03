@@ -107,12 +107,22 @@ def listier(j):
     return {k: [v] for k, v in j.items()}
 
 
+
 for shtuff in GRID_18:
     for _, j in STRAT2PARAMS_V2.items():
         d = j.copy()
         d.update(shtuff)
         d['woof'] = True
-        STRAT2PARAMS_V3.append(d)
+        NEED_TO_RUN_ERIC_BOX_V2.append(d)
+
+
+NEED_TO_RUN_ERIC_BOX_V3 = []
+for shtuff in GRID_18:
+    for _, j in STRAT2PARAMS_V3.items():
+        d = j.copy()
+        d.update(shtuff)
+        d['woof'] = True
+        NEED_TO_RUN_ERIC_BOX_V3.append(d)
 
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},
