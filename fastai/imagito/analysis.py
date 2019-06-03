@@ -31,10 +31,11 @@ pd.DataFrame.ds_woof = property(lambda df: df[df['woof'] == 1])
 pd.DataFrame.imagenette =property(lambda df: df[df['woof'] == 0])
 pd.DataFrame.n_configs_geq_3 = property(lambda df: df[df[NCONFIGS] >= 3])
 pd.DataFrame.n_configs_geq_4 = property(lambda df: df[df[NCONFIGS] >= 4])
+pd.DataFrame.n_configs_geq_18 = property(lambda df: df[df[NCONFIGS] >= 18])
 pd.DataFrame.n_configs_geq_cut = property(lambda df: df[df[NCONFIGS] >= 25])
 pd.DataFrame.just_xr50 = property(lambda df: df[df['arch'] == XR50])
 
-
+WOOF_SIZE = 12454
 def best_epoch(df):
     gb = df.groupby('date')
     exp_df = gb.first().assign(
@@ -108,13 +109,15 @@ def preprocess_and_assign_strat(df):
          '0-1': '2Classes'})
     df['seconds'] = df['time'].str.split(':').apply(lambda x: 60 * int(x[0]) + int(x[1]))
     df[STRAT] = df['classes'] + '-' + df['sample'].astype(str)
-
     df.loc[df[DS_PATH] != 'imagenette', STRAT] = 'distillation'
     df.loc[df['_hardness_str'] != DEFAULT_HARD_STR, STRAT] = df.loc[
         df['_hardness_str'] != DEFAULT_HARD_STR, '_hardness_str']
     emsk = df['epochs'] != 20
     df.loc[emsk, STRAT] = df.loc[emsk, STRAT] + '-ep' + df.loc[emsk, 'epochs'].astype(str)
     df['woof'] = df['woof'].replace({True: 1})
+    # Path Hardness bug
+    msk = ((df['woof']) & (df['n_train'] == WOOF_SIZE) & (df[STRAT].str.startswith('hard')))
+    df.loc[msk, STRAT] = ALL_DATA_STRAT
     return df
 
 def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
@@ -148,7 +151,7 @@ TIT_COL = 'Changeset'
 CAT_NAME = 'Proxy Strategy'
 posc, allc = 'Positive Changes','All Changes'
 
-def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS,  agg_col = Z_ACC_EPOCH):
+def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS,  agg_col = ACCURACY):
     agger = lambda df: df.groupby(gb_lst)[agg_col].median()
 
     tab_1 = pdf[(pdf.epoch == 19) & (pdf[STRAT] == 'All Classes-0.5')].pipe(agger)
@@ -165,6 +168,7 @@ def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS,  agg_col = Z_ACC_EPOCH):
 
 def get_stats(grp, agg_col=ACCURACY):
     """"""
+    grp = grp.dropna(subset=[agg_col, Y_COL])
     x = grp[agg_col]
     y = grp[Y_COL]
     tau, pval = kendalltau(x.rank(), y.rank())
@@ -181,8 +185,12 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     gb_corr = lambda df: df.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col]))
     all_coors = gb_corr(all_proxy)
     #print(all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]].shape[0] / all_proxy.shape[0])
-    all_pos_coors = gb_corr(all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]])
+    pos_proxy = all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]]
+    all_pos_coors = gb_corr(pos_proxy)
     cor_tab = all_coors.to_frame(allc).join(all_pos_coors.to_frame(posc)).round(3)
+    cor_tab['KT Pval'] =  all_proxy.groupby(STRAT).apply(lambda x: get_stats(x, agg_col=ACCURACY)).round(3)
+    cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(lambda x: get_stats(x, agg_col=ACCURACY)).round(3)
+
 
     agger = lambda df: df.groupby(_gb)[agg_col].median()
     _res_df = exp_df.pipe(agger).unstack(level=DEFAULT_CONFIG_COLS)
