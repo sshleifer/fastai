@@ -154,7 +154,7 @@ for shtuff in stem_grid + opt_grid:
         dwoof = d.copy()
         dwoof['woof'] = True
         NEW_FUN_WOOF.append(dwoof)
-    bm = {'classes': None, 'sample': 1.0},
+    bm = {'classes': None, 'sample': 1.0}
     bm.update(shtuff)
     NEW_FUN_NO_WOOF.append(bm.copy())
     bm['woof'] = True
