@@ -137,33 +137,6 @@ for arch in ['xresnet18', 'xresnet101']:
         NEED_TO_RUN_ERIC_BOX_V4.append(d)
 
 
-stem_testers = [16, 48]
-stem_grid = [{'stem1': x} for x in stem_testers]  + [{'stem2': x} for x in stem_testers] + [{'stem1': 16, 'stem2': 16}]
-opt_grid = [{'opt': 'SGD', 'opt': 'RMS'}]
-
-import funcy
-
-NEW_FUN_NO_WOOF = []
-NEW_FUN_WOOF = []
-for shtuff in stem_grid + opt_grid:
-    for _, j in STRAT2PARAMS_V3.items():
-        d = j.copy()
-        d.update(shtuff)
-        NEW_FUN_NO_WOOF.append(d.copy())
-        dwoof = d.copy()
-        dwoof['woof'] = True
-        NEW_FUN_WOOF.append(dwoof)
-    bm = {'classes': None, 'sample': 1.0}
-    bm.update(shtuff)
-    NEW_FUN_NO_WOOF.append(bm.copy())
-    bm['woof'] = True
-    NEW_FUN_WOOF.append(bm)
-
-
-
-
-
-C1, C2, C3 = (NEW_FUN_NO_WOOF[:28], NEW_FUN_NO_WOOF[28:56], NEW_FUN_NO_WOOF[56:])
 
 strat2params = {
     'Half Classes-1.0': {'classes': halfc, 'sample': 1.0},

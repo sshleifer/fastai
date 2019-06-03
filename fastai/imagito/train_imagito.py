@@ -43,6 +43,7 @@ def main(
         save=False,
         flip_lr_p=0.5,
         stem1: Param('nchan for xresnet', int)=32, stem2: Param('nchan for xresnet', int)=32,
+        inplanes: Param('nchan for xresnet', int)=64,
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
@@ -59,9 +60,7 @@ def main(
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
     n_classes = len(classes) if classes is not None else 10
     m = xresnet50_2 if arch is None else globals()[arch]
-    if (stem1!=32) or (stem2!=32):
-        mod = m(c_out=n_classes, stem1=stem1, stem2=stem2)
-    else: mod = m(c_out=n_classes)
+    mod = m(c_out=n_classes, stem1=stem1, stem2=stem2, inplanes=inplanes)
     params_dict['n_train'] = len(data.train_dl.dataset)
     params_dict['n_val'] = len(data.valid_dl.dataset)
     params_dict['hostname'] = HOSTNAME
