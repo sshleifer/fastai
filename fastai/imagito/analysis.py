@@ -222,7 +222,7 @@ X_COL = "Proxy Boost (SD)"
 Y_COL = "Target Boost (SD)"
 TIT_COL = 'Changeset'
 CAT_NAME = 'Proxy Strategy'
-posc, allc = 'Positive Changes', 'All Changes'
+posc, allc = 'Pearson Pos', 'Pearson'
 
 
 def make_cmb(pdf, gb_lst=DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
