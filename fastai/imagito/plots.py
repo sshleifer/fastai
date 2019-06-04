@@ -22,7 +22,7 @@ M3 = { 'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}
 
 
 
-def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2', yerr=0.1):
+def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2', yerr=0.1, fit_reg=False):
     """Input data like fastai/imagito/cti.mp"""
     #sns.set_style("whitegrid")
     pld = cti[cti[hue].isin(strats)]
@@ -30,7 +30,7 @@ def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2', yerr=
                     palette="Set1",
                     hue=hue,  # aspect=0.4,
                     hue_order=strats,
-                    fit_reg=Falsge,
+                    fit_reg=fit_reg,
                     )
 
     # TODO add the actual confidence values
