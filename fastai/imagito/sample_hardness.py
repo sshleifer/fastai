@@ -6,6 +6,8 @@ import torch
 import math
 from operator import itemgetter
 
+
+
 global i
 
 def load_model(model_dir, size, woof, bs, sample):
@@ -145,7 +147,3 @@ def make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof):
     paths_to_toss = all_paths.difference(paths_to_keep)
     filter_func = lambda x: str(os.path.basename(x)) not in paths_to_toss  # ignores val paths
     return filter_func
-
-
-
-
