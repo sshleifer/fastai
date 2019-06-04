@@ -303,6 +303,7 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     cor_tab['Proxy Truth Rank'] = _res_df.rank(1, ascending=False)[bm_perf.idxmax()]
     cor_tab['Regret'] = bm_perf.max() - cor_tab['BM Acc for Pars']
     tab = cor_tab.join(run_grouped_regs(exp_df, agg_col=agg_col))
+    # run_grouped_regs(exp_df, agg_col=agg_col)
     tab['Seconds'] = (exp_df.s128.just_xr50.groupby(STRAT)['cost'].median())
     # maybe do n_train * epochs or something
     tab['Relative Cost'] = (tab['Seconds'] / 473.).round(2)
@@ -426,6 +427,7 @@ def assign_m2(cti):
     M3 = {'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}
     cti['M2'] = cti[META_STRAT]
     cti.loc[~cti[META_STRAT].isin(M3), 'M2'] = 'Random'
+    cti.loc[cti[META_STRAT] == 'distillation', 'M2'] = 'distillation'
     return cti
 
 
