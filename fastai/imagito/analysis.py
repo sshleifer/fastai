@@ -58,8 +58,9 @@ def best_epoch(df):
 
 pd.DataFrame.exp_df = property(best_epoch)
 METRIC1 = 'r2'
-# spearman correlation of good proxy experiments (rank sensitive and doesn't consider bad experiments)
 METRIC2 = 'Spearman Pos'
+# spearman correlation of good proxy experiments (rank sensitive and doesn't consider bad experiments)
+
 
 
 def check_corr(cti, ctw):

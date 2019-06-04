@@ -22,7 +22,7 @@ M3 = { 'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}
 
 
 
-def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2'):
+def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2', yerr=0.1):
     """Input data like fastai/imagito/cti.mp"""
     #sns.set_style("whitegrid")
     pld = cti[cti[hue].isin(strats)]
@@ -30,11 +30,11 @@ def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2'):
                     palette="Set1",
                     hue=hue,  # aspect=0.4,
                     hue_order=strats,
-                    fit_reg=False,
+                    fit_reg=Falsge,
                     )
 
     # TODO add the actual confidence values
-    fg.ax.errorbar(x=cti[x].values, y=cti[y].values, fmt='none', yerr=0.1, capsize=2.5)
+    fg.ax.errorbar(x=pld[x].values, y=pld[y].values, fmt='none', yerr=yerr, capsize=2.5)
 
     line_points = get_line(cti, x, y)
     for a in fg.axes.flat:
