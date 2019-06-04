@@ -40,21 +40,35 @@ pd.DataFrame.n_configs_geq_cut = property(lambda df: df[df[NCONFIGS] >= 25])
 pd.DataFrame.just_xr50 = property(lambda df: df[df['arch'] == XR50])
 pd.DataFrame.just_xr18 = property(lambda df: df[df['arch'] == XR18])
 pd.DataFrame.ep_strat = property(lambda df: df[df[STRAT].str.contains('ep')])
+
 WOOF_SIZE = 12454
 IM_STEPS_20 = 251781
+#pd.concat = safe_concat
 
 ADJ_ACC = 'ADJ_ACC'
 NSTEPS = 'nsteps'
 def best_epoch(df):
-    gb = df.groupby(('date', HOSTCOL))
+    gb = df.groupby(['date', HOSTCOL])
     exp_df = gb.first().assign(
         accuracy=gb.accuracy.max(), epochs_run=gb.epoch.max() + 1, cost=gb['seconds'].sum())
-    exp_df[ADJ_ACC] = exp_df.groupby(('size', 'woof'))[ACCURACY].transform(zscore)
+    exp_df[ADJ_ACC] = exp_df.groupby(['size', 'woof'])[ACCURACY].transform(zscore)
     exp_df[NSTEPS] = (exp_df.n_train * exp_df.epochs) / IM_STEPS_20
     return exp_df[exp_df['epochs_run'] == exp_df['epochs']]
 
 
 pd.DataFrame.exp_df = property(best_epoch)
+METRIC1 = 'r2'
+# spearman correlation of good proxy experiments (rank sensitive and doesn't consider bad experiments)
+METRIC2 = 'Spearman Pos'
+
+
+def check_corr(cti, ctw):
+    orig_cols = cti.columns
+    prefix='DONGER'
+    ctw = ctw.add_prefix(prefix)
+    catted = safe_concat([ctw, cti],  axis=1)
+    corrs = catted.corr()
+    return pd.Series({c: corrs.loc[c, f'{prefix}{c}'] for c in corrs.columns.intersection(orig_cols)})
 
 
 def safe_concat(*args, **kwargs):
@@ -258,11 +272,14 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     strat_mean = 'strat_mean'
     all_proxy[strat_mean] = all_proxy.groupby(STRAT)[agg_col].transform('median')
     gb_corr = lambda df: df.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col]))
+    sp_corr = lambda df: df.groupby(STRAT).apply(lambda x: x[Y_COL].corr(x[agg_col], method='spearman'))
     all_coors = gb_corr(all_proxy)
     # print(all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]].shape[0] / all_proxy.shape[0])
     pos_proxy = all_proxy.loc[all_proxy[agg_col] > all_proxy[strat_mean]]
     all_pos_coors = gb_corr(pos_proxy)
     cor_tab = all_coors.to_frame(allc).join(all_pos_coors.to_frame(posc)).round(3)
+    cor_tab['Spearman'] = sp_corr(pos_proxy)
+    cor_tab['Spearman Pos'] = sp_corr(all_proxy)
     cor_tab['KT Pval'] = all_proxy.groupby(STRAT).apply(
         lambda x: get_stats(x, agg_col=agg_col)).round(3)
     cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(
