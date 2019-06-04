@@ -32,8 +32,10 @@ def make_scatter(cti, strats, hue=META_STRAT, x ='Relative Cost', y ='r2'):
                     hue_order=strats,
                     fit_reg=False,
                     )
-    # somehow add confidence bands to points!
-    # https: // seaborn.pydata.org / generated / seaborn.pointplot.html
+
+    # TODO add the actual confidence values
+    fg.ax.errorbar(x=cti[x].values, y=cti[y].values, fmt='none', yerr=0.1, capsize=2.5)
+
     line_points = get_line(cti, x, y)
     for a in fg.axes.flat:
         a.set_xlim(0, .8)
