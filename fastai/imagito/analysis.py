@@ -1,4 +1,3 @@
-from pathlib import Path
 from fastai.imagito.nb_utils import *
 from fastai.imagito.utils import *
 import pandas as pd
@@ -21,6 +20,8 @@ DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof', 'ar
 ALL_DATA_STRAT = 'All Classes-1.0'
 XR50 = 'xresnet_50'
 XR18 = 'xresnet_18'
+RS = 'Random Sample'
+HF = 'Hardness Filter'
 
 # New properties for DF
 pd.DataFrame.e19 = property(lambda df: df[df.epoch == 19])
@@ -40,14 +41,16 @@ pd.DataFrame.just_xr50 = property(lambda df: df[df['arch'] == XR50])
 pd.DataFrame.just_xr18 = property(lambda df: df[df['arch'] == XR18])
 pd.DataFrame.ep_strat = property(lambda df: df[df[STRAT].str.contains('ep')])
 WOOF_SIZE = 12454
+IM_STEPS_20 = 251781
 
 ADJ_ACC = 'ADJ_ACC'
-
+NSTEPS = 'nsteps'
 def best_epoch(df):
     gb = df.groupby(('date', HOSTCOL))
     exp_df = gb.first().assign(
         accuracy=gb.accuracy.max(), epochs_run=gb.epoch.max() + 1, cost=gb['seconds'].sum())
     exp_df[ADJ_ACC] = exp_df.groupby(('size', 'woof'))[ACCURACY].transform(zscore)
+    exp_df[NSTEPS] = (exp_df.n_train * exp_df.epochs) / IM_STEPS_20
     return exp_df[exp_df['epochs_run'] == exp_df['epochs']]
 
 
@@ -182,15 +185,21 @@ def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
     ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
     return ax
 
-
-def make9_19_data(df, acc_col=ACCURACY, ref_epoch=10):
+def _cull_data(df, ref_epoch, acc_col):
     ep9 = df[df['epoch'] == ref_epoch - 1].set_index(DATE)
     ep19 = df.e19.set_index(DATE)
     pl = ep9.rename(columns={acc_col: 'proxy'}).assign(targ=ep19[acc_col])
+    return pl
+
+
+
+def make9_19_data(df, acc_col=ACCURACY, ref_epoch=10):
+    pl = _cull_data(df, ref_epoch, acc_col)
     corr = pl.corr().loc['targ', 'proxy']
     ax = pl.plot.scatter(x='proxy', y='targ')
     ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
     return pl
+
 
 
 ### Tables for Milestone
@@ -288,6 +297,7 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     # maybe do n_train * epochs or something
     tab['Relative Cost'] = (tab['Seconds'] / 473.).round(2)
     tab[META_STRAT] = [assign_meta_strat(x) for x in tab.index]
+    tab = assign_m2(tab)
     return tab
 
 def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
@@ -305,6 +315,12 @@ def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
     coefs.loc[NCONFIGS] = xy.shape[0]
     coefs.loc[STRAT] = proxy_strat
     return coefs
+
+def assign_m2(cti):
+    M3 = {'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}
+    cti['M2'] = cti[META_STRAT]
+    cti.loc[~cti[META_STRAT].isin(M3), 'M2'] = 'Random'
+    return cti
 
 
 def run_grouped_regs(exp_df, agg_col=ACCURACY):
@@ -339,32 +355,7 @@ def make_pl_data(df):
     return mg
 
 
-def make_change_scatters(df):
-    "BROKEN"
-    cmb, _ = make_cmb(df)
-    stk = cmb.stack().reset_index(level=2).rename(columns={'level_2': CAT_NAME, 0: X_COL})
-    stk = stk[(stk[CAT_NAME] != 'Full_Samples')]
-    stk[Y_COL] = cmb['Full_Samples']
-    stk_zoom = stk[stk[X_COL] > 0]
 
-    stk_zoom[TIT_COL] = posc
-    stk[TIT_COL] = allc
-    pl_data = safe_concat([stk, stk_zoom], sort=False)
-    fg = sns.lmplot(data=pl_data, x=X_COL, y=Y_COL, hue=CAT_NAME, legend_out=False,
-                    markers=["o", "x", "d"], palette="Set1", ci=70, col=TIT_COL, sharex=False,
-                    col_order=[allc, posc])
-    fg.axes[0][0].set_ylim(-3, 1.5)
-    fg.axes[0][1].set_xlim(0, 1.5)
-    fg.axes[0][1].set_ylim(-3, 1.5)
-    ### Accompanying table
-    c1 = stk.groupby(CAT_NAME).corr()[Y_COL].loc[lambda x: x != 1].round(2).to_frame(allc)
-    c2 = stk_zoom.groupby(CAT_NAME).corr()[Y_COL].loc[lambda x: x != 1].round(2).to_frame(posc)
-    tab = pd.concat([c1, c2], axis=1)
-    tab.index = tab.index.get_level_values(0)
-    return fg, tab  # .pipe(blind_descending_sort)
-
-RS = 'Random Sample'
-HF = 'Hardness Filter'
 META_TO_STRAT = {'Baseline': ['All Classes-1.0'],
                  'Half Classes-Some Data': ['Half Classes-0.1',
                                             'Half Classes-0.25',
