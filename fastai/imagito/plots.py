@@ -16,6 +16,15 @@ def get_line(cti, x, y):
     line = (xp, clf.predict(np.array([xp, xp ** 2, xp ** 3]).T))
     return line
 
+def drilldown_plot(mg, strat, hue='woof', xcol=ACCURACY, y=TACC, **kwargs):
+    pld = mg[mg[STRAT]==strat]
+
+    fg = sns.lmplot(xcol, y, pld, truncate=True, hue=hue, **kwargs)
+    for ax in fg.axes.flat:
+        ax.set_xlim(pld[xcol].min() - .02, pld[xcol].max() + .02)
+        ax.set_ylim(pld[y].min() - .02, pld[y].max() + .02)
+        #xcol.set_title(f'Corr: {pld[y2].corr(pld[ACCURACY]):.3f}')
+    return fg
 
 
 M3 = { 'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}

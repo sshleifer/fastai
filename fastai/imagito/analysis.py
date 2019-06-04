@@ -10,6 +10,8 @@ Z_ACC_EPOCH = 'z_acc_epoch'
 
 STRAT = 'sampling_strat'
 Path.ls = property(lambda self: list(self.iterdir()))
+
+TACC = 'Target Acc'
 ACCURACY = 'accuracy'
 ZACC, DATE = 'z_acc', 'date'
 NCONFIGS = 'N_configs'
@@ -366,9 +368,10 @@ import seaborn as sns
 
 sns.set(color_codes=True)
 y2_name = 'Target Acc'
+
 def make_pl_data(df):
     e = df.exp_df
-    y = e.bm_strat.groupby(DEFAULT_CONFIG_COLS)['accuracy'].median()
+    y = e.bm_strat.groupby(DEFAULT_CONFIG_COLS)[ACCURACY].median()
     mg = e.merge(y.to_frame(y2_name).reset_index(), on=DEFAULT_CONFIG_COLS, how='left')
     return mg
 
