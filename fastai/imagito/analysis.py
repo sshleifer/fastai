@@ -1,7 +1,8 @@
 from fastai.imagito.nb_utils import *
+#from fastai.imagito.strat_meta import assign_m2, assign_meta_strat
 from fastai.imagito.utils import *
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LassoCV
 from sklearn.metrics import r2_score
 from fastai.imagito.nb_utils import zscore, zip_to_series
 from scipy.stats import kendalltau
@@ -42,6 +43,8 @@ pd.DataFrame.n_configs_geq_cut = property(lambda df: df[df[NCONFIGS] >= 25])
 pd.DataFrame.just_xr50 = property(lambda df: df[df['arch'] == XR50])
 pd.DataFrame.just_xr18 = property(lambda df: df[df['arch'] == XR18])
 pd.DataFrame.ep_strat = property(lambda df: df[df[STRAT].str.contains('ep')])
+pd.DataFrame.no_sgd = property(lambda df: df[df['opt'] !='SGD'])
+#pd.DataFrame.
 
 WOOF_SIZE = 12454
 IM_STEPS_20 = 251781
@@ -172,20 +175,6 @@ def preprocess_and_assign_strat(df):
     return df
 
 
-def assign_meta_strat(x:str):
-    if x in EPSTRATS: return 'EP'
-    if x==ALL_DATA_STRAT: return 'Baseline'
-    if x.startswith('hard'):
-        return STRAT2DIFFICULTY[x]
-    if x.startswith('Half Classes') or x.startswith('Other Half Classes'):
-        if x.endswith('-1.0'): return 'Half Classes'
-        else: return ('Half Classes-Some Data')
-    if x.startswith('All Classes'): return 'Random Sample'
-    else: return x
-
-
-
-
 def find_overlapping_configs(df, strat, baseline=ALL_DATA_STRAT, config_cols=DEFAULT_CONFIG_COLS):
     gb_size = df.groupby([STRAT] + config_cols).size().unstack(config_cols)
     return gb_size.loc[[strat, baseline]].dropna(axis=1, how='all')
@@ -265,7 +254,23 @@ def get_stats(grp, agg_col=ACCURACY):
     y = grp[Y_COL]
     tau, pval = kendalltau(x.rank(), y.rank())
     return pval
-
+from sklearn.model_selection import cross_val_predict
+def assign_resid(cti, fnames, y):
+    X = cti[fnames]
+    msk = cti[fnames +[y]].notnull().all(1)
+    X = pd.concat([X, (X**2).add_prefix('sq_'), (X**3).add_prefix('cu_')], axis=1)
+    fnames = X.columns
+    clf = LassoCV().fit(X.loc[msk], cti[y].loc[msk])
+    coef = pd.Series(dict(zip(fnames, clf.coef_)))
+    #preds = cross_val_predict(clf, X.loc[msk], cti[y].loc[msk], cv=X.shape[0]-1)
+    rname = f'{y}_Boost'
+    #cti[rname] = np.nan
+    #cti.loc[msk, rname] = cti[y].loc[msk] - preds
+    cti[rname+'_v0'] = cti[y] - clf.predict(X.fillna(0))
+    print('Coef for cost regression')
+    print(coef)
+    return cti
+    #return cti[y] - clf.predict(X.fillna(0))
 
 def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     pgb = exp_df.groupby(_gb)
@@ -287,24 +292,9 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
         lambda x: get_stats(x, agg_col=agg_col)).round(3)
     cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(
         lambda x: get_stats(x, agg_col=agg_col))
-    # #print(all_proxy.head())
-    # #woof_ct = all_proxy.groupby((STRAT, 'woof')).size().unstack()
-    #
-    # #woof_frac = woof_ct /woof_ct.sum(1)
-    #
-    # kt_woof = all_proxy.reset_index().ds_woof.groupby(STRAT).apply(
-    #     lambda x: get_stats(x, agg_col=agg_col)
-    # )#.unstack().fillna(0.) * woof_frac.fillna(0.)
-    # print(kt_woof).shape
-
     cor_tab['KT Pos Pval'] = pos_proxy.groupby(STRAT).apply(
         lambda x: get_stats(x, agg_col=agg_col))
     cor_tab = cor_tab.round(3)
-    # cor_tab['Pacc2'] = pos_proxy.groupby(STRAT).apply(
-    #     lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
-    # cor_tab['Pacc2b'] = pos_proxy.groupby(STRAT).apply(
-    #     lambda x: pacc_at_n(x, nruns=50, agg_col=agg_col))
-
     agger = lambda df: df.groupby(_gb)[agg_col].median()
     _res_df = exp_df.pipe(agger).unstack(level=DEFAULT_CONFIG_COLS)
     bm_perf = _res_df.loc[ALL_DATA_STRAT]
@@ -318,6 +308,7 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     tab['Relative Cost'] = (tab['Seconds'] / 473.).round(2)
     tab[META_STRAT] = [assign_meta_strat(x) for x in tab.index]
     tab = assign_m2(tab)
+    tab = assign_resid(tab, ['Relative Cost'], 'r2').round(4)
     return tab
 
 def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
@@ -335,12 +326,6 @@ def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
     coefs.loc[NCONFIGS] = xy.shape[0]
     coefs.loc[STRAT] = proxy_strat
     return coefs
-
-def assign_m2(cti):
-    M3 = {'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}
-    cti['M2'] = cti[META_STRAT]
-    cti.loc[~cti[META_STRAT].isin(M3), 'M2'] = 'Random'
-    return cti
 
 
 def run_grouped_regs(exp_df, agg_col=ACCURACY):
@@ -368,17 +353,50 @@ import seaborn as sns
 
 sns.set(color_codes=True)
 y2_name = 'Target Acc'
-
+TACC = y2_name
 def make_pl_data(df):
     e = df.exp_df
     y = e.bm_strat.groupby(DEFAULT_CONFIG_COLS)[ACCURACY].median()
-    mg = e.merge(y.to_frame(y2_name).reset_index(), on=DEFAULT_CONFIG_COLS, how='left')
+    y2 = e.bm_strat.groupby(DEFAULT_CONFIG_COLS)[ADJ_ACC].median()
+
+    mg = e.merge(y.to_frame(y2_name).assign(targ_adj_acc=y2).reset_index(), on=DEFAULT_CONFIG_COLS, how='left')
     return mg
 
 
 
+### Strat Meta
+STRATS = ['2Classes-0.1',
+ '2Classes-0.5',
+ '2Classes-1.0',
+ 'All Classes-0.1',
+ 'All Classes-0.25',
+ 'All Classes-0.5',
+ 'All Classes-0.7',
+ 'All Classes-1.0',
+ 'All Classes-1.0-ep1',
+ 'All Classes-1.0-ep10',
+ 'All Classes-1.0-ep5',
+ 'Half Classes-0.1',
+ 'Half Classes-0.25',
+ 'Half Classes-0.5',
+ 'Half Classes-0.7',
+ 'Half Classes-1.0',
+ 'Other Half Classes-1.0',
+ 'distillation',
+ 'hard-0.0-0.1',
+ 'hard-0.0-0.25',
+ 'hard-0.0-0.5',
+ 'hard-0.0-0.75',
+ 'hard-0.05-0.5',
+ 'hard-0.25-1.0',
+ 'hard-0.5-1.0',
+ 'hard-0.75-1.0',
+ 'hard-0.9-1.0'
+          ]
+HALF_STRATS = [x for x in STRATS if x.startswith('Half')]
 META_TO_STRAT = {'Baseline': ['All Classes-1.0'],
                  'Half Classes-Some Data': ['Half Classes-0.1',
+                                            'Half Classes-1.0',
                                             'Half Classes-0.25',
                                             'Half Classes-0.7',
                                             'Half Classes-0.5'],
@@ -397,35 +415,31 @@ META_TO_STRAT = {'Baseline': ['All Classes-1.0'],
                                    'All Classes-0.25',
                                    'All Classes-0.1'],
                  'distillation': ['distillation'],
-                 'Half Classes': ['Half Classes-1.0', 'Other Half Classes-1.0'],
+                 'Other Half Classes': ['Other Half Classes-1.0'],
                  '2Classes-0.1': ['2Classes-0.1'],
                  '2Classes-1.0': ['2Classes-1.0'],
-                 '2Classes-0.5': ['2Classes-0.5']}
+                 '2Classes-0.5': ['2Classes-0.5']
+                 }
 
-S2META = {'All Classes-1.0': 'Baseline',
-          'Half Classes-0.1': 'Half Classes-Some Data',
-          'All Classes-1.0-ep10': 'EP',
-          'Half Classes-0.25': 'Half Classes-Some Data',
-          'All Classes-1.0-ep5': 'EP',
-          'hard-0.75-1.0': 'Hardness Filter',
-          'Half Classes-0.7': 'Half Classes-Some Data',
-          'All Classes-0.7': 'Random Sample',
-          'All Classes-1.0-ep1': 'EP',
-          'hard-0.0-0.75': 'Hardness Filter',
-          'hard-0.5-1.0': 'Hardness Filter',
-          'hard-0.9-1.0': 'Hardness Filter',
-          'hard-0.0-0.1': 'Hardness Filter',
-          'All Classes-0.5': 'Random Sample',
-          'Half Classes-0.5': 'Half Classes-Some Data',
-          'distillation': 'distillation',
-          'hard-0.0-0.5': 'Hardness Filter',
-          'Half Classes-1.0': 'Half Classes',
-          'hard-0.0-0.25': 'Hardness Filter',
-          'hard-0.05-0.5': 'Hardness Filter',
-          'Other Half Classes-1.0': 'Half Classes',
-          'hard-0.25-1.0': 'Hardness Filter',
-          'All Classes-0.25': 'Random Sample',
-          'All Classes-0.1': 'Random Sample',
-          '2Classes-0.1': '2Classes-0.1',
-          '2Classes-1.0': '2Classes-1.0',
-          '2Classes-0.5': '2Classes-0.5'}
+
+def assign_m2(cti):
+    M3 = {'EP', 'Hard Examples', 'Easy Examples', 'Hard Examples (*)'}
+    cti['M2'] = cti[META_STRAT]
+    cti.loc[~cti[META_STRAT].isin(M3), 'M2'] = 'Random'
+    return cti
+
+
+def assign_meta_strat(x:str):
+    if x in EPSTRATS: return 'EP'
+    if x==ALL_DATA_STRAT: return 'Baseline'
+    if x.startswith('hard'):
+        return STRAT2DIFFICULTY[x]
+    if x.startswith('Half Classes') or x.startswith('Other Half Classes'):
+        return 'Half Classes'
+        #else: return ('Half Classes-Some Data')
+    if x.startswith('All Classes'): return 'Random Sample'
+    else: return x
+
+#def assign_m3(cti):
+
+
