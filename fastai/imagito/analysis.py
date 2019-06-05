@@ -279,7 +279,7 @@ distill_res = pd.Series(
 {'Pearson': np.nan,
  'Pearson Pos': np.nan,
  'Spearman': np.nan,
- 'Spearman Pos': np.nan,
+ 'Spearman Pos': .01,
  'KT Pval': np.nan,
  'KT Pos Pval': np.nan,
  'Best on Proxy': np.nan,
@@ -333,9 +333,10 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     tab['Seconds'] = (exp_df.s128.just_xr50.groupby(STRAT)['cost'].median())
     tab.loc['distillation'] = distill_res
     # maybe do n_train * epochs or something
-    tab['Relative Cost'] = (tab['Seconds'] / 473.).round(2)
+    tab['Relative Cost'] = (tab['Seconds'] / 473.).round(4)
     tab[META_STRAT] = [assign_meta_strat(x) for x in tab.index]
     tab = assign_m2(tab)
+    tab = assign_resid(tab, ['Relative Cost'], 'r2').round(4)
     tab = assign_resid(tab, ['Relative Cost'], 'r2').round(4)
 
     return tab
@@ -364,6 +365,19 @@ def run_grouped_regs(exp_df, agg_col=ACCURACY):
     reg_results['N_configs'] = reg_results['N_configs'].astype(int)
     return reg_results.rename(columns={'X': 'coeff'}).set_index(STRAT)
 
+
+def make_headline_tab(ct):
+    tab = ct[ct['bin'].isin([0.06, .6, .3, .17, 0.31, .81])].groupby(['bin', META_STRAT])[
+        'r2'].mean().unstack('bin').drop('Hard Examples (*)')
+
+    tm = tab.mean()
+    tab = tab - tm
+    tab.loc['Avg'] = tm
+
+    t2 = tab.sort_index().round(2)
+    t2.columns = ['5%', '10%', '25%', '50%', '75%']
+
+    return t2
 
 def get_strat(df, strat):
     return df[df[STRAT] == strat]
