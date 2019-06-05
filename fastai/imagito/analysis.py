@@ -272,6 +272,32 @@ def assign_resid(cti, fnames, y):
     return cti
     #return cti[y] - clf.predict(X.fillna(0))
 
+distill_res = pd.Series(
+
+
+
+{'Pearson': np.nan,
+ 'Pearson Pos': np.nan,
+ 'Spearman': np.nan,
+ 'Spearman Pos': np.nan,
+ 'KT Pval': np.nan,
+ 'KT Pos Pval': np.nan,
+ 'Best on Proxy': np.nan,
+ 'Max Proxy Acc': np.nan,
+ 'BM Acc for Pars': np.nan,
+ 'Proxy Truth Rank': 35,
+ 'Regret': 0.12,
+ 'coeff': .032,
+ 'r2': .032,
+ 'N_configs': 20,
+ 'Seconds': 12,
+ 'Relative Cost': 0.005,
+ 'META_STRAT': 0.0,
+ 'M2': 'distillation',
+ 'r2_Boost_v0': -.04
+ }
+)
+
 def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     pgb = exp_df.groupby(_gb)
 
@@ -305,11 +331,13 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     tab = cor_tab.join(run_grouped_regs(exp_df, agg_col=agg_col))
     # run_grouped_regs(exp_df, agg_col=agg_col)
     tab['Seconds'] = (exp_df.s128.just_xr50.groupby(STRAT)['cost'].median())
+    tab.loc['distillation'] = distill_res
     # maybe do n_train * epochs or something
     tab['Relative Cost'] = (tab['Seconds'] / 473.).round(2)
     tab[META_STRAT] = [assign_meta_strat(x) for x in tab.index]
     tab = assign_m2(tab)
     tab = assign_resid(tab, ['Relative Cost'], 'r2').round(4)
+
     return tab
 
 def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
