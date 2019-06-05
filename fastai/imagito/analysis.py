@@ -260,7 +260,7 @@ def assign_resid(cti, fnames, y):
     msk = cti[fnames +[y]].notnull().all(1)
     X = pd.concat([X, (X**2).add_prefix('sq_'), (X**3).add_prefix('cu_')], axis=1)
     fnames = X.columns
-    clf = LassoCV().fit(X.loc[msk], cti[y].loc[msk])
+    clf = LassoCV(cv=5).fit(X.loc[msk], cti[y].loc[msk])
     coef = pd.Series(dict(zip(fnames, clf.coef_)))
     #preds = cross_val_predict(clf, X.loc[msk], cti[y].loc[msk], cv=X.shape[0]-1)
     rname = f'{y}_Boost'
