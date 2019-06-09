@@ -10,7 +10,7 @@ from fastprogress import fastprogress
 from fastai.imagito.utils import *
 from fastai.imagito.classes import ClassUtils
 from fastai.imagito.sample_hardness import *
-
+from fastai.imagito.curriculum import CurriculumCallback
 
 
 torch.backends.cudnn.benchmark = True
@@ -47,9 +47,8 @@ def main(
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
-
-    gpu = setup_distrib(gpu)
-    if gpu is None: bs *= torch.cuda.device_count()
+    if gpu != 'ignore': gpu = setup_distrib(gpu)
+    if gpu is None and gpu != 'ignore': bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
     elif opt=='rms'  : opt_func = partial(optim.RMSprop, alpha=alpha, eps=eps)
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
@@ -58,6 +57,8 @@ def main(
     filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof)
     if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
+    get_data_fn = lambda ff: get_data(size, woof, bs, sample, classes, filter_func=ff, flip_lr_p=flip_lr_p)
+    # Work around filter_func issue
     n_classes = len(classes) if classes is not None else 10
     m = xresnet50_2 if arch is None else globals()[arch]
     mod = m(c_out=n_classes, stem1=stem1, stem2=stem2, inplanes=inplanes)
@@ -96,8 +97,9 @@ def main(
     # save results to a file like 2019-05-12_22:10/metrics.csv
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
+    cc = CurriculumCallback(learn, get_data_fn, epochs, woof)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
-                        callbacks=[csv_logger])
+                        callbacks=[csv_logger, cc])
     if save:
         learn.save('final_classif')
     learn.destroy()
