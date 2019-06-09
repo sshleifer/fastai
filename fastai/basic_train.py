@@ -94,14 +94,11 @@ def fit(epochs:int, learn:BasicLearner, callbacks:Optional[CallbackList]=None, m
     exception=False
     try:
         for epoch in pbar:
-            print(type(learn.data.train_dl))
             learn.model.train()
             cb_handler.set_dl(learn.data.train_dl)
-            print(type(learn.data.train_dl))
             for c in curric_callbacks:
                 learn.data.train_dl = c.set_dl_on_epoch_begin(epoch)
             cb_handler.on_epoch_begin()
-            print(type(learn.data.train_dl))
             for xb,yb in progress_bar(learn.data.train_dl, parent=pbar):
                 xb, yb = cb_handler.on_batch_begin(xb, yb)
                 loss = loss_batch(learn.model, xb, yb, learn.loss_func, learn.opt, cb_handler)
