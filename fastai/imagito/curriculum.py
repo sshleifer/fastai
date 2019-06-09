@@ -22,13 +22,12 @@ class CurriculumCallback(LearnerCallback):
             self.sched = make_easy_to_hard_sched(num_epochs)
         elif self.sched_type == 'hard_first':
             self.sched = list(reversed(make_easy_to_hard_sched(num_epochs)))
+        else:
+            raise ValueError(sched_type)
 
         self.produce_image_list = produce_image_list_fn
-        step = 1/ num_epochs
-        upper_bound = np.round(np.arange(1., 0, -step), 4)  # start easy
-        self.sched = list(zip(upper_bound - step, upper_bound))
         self.woof = woof
-        print(self.sched)
+        print(self.sched_type, self.sched)
         #self.woof = self
 
     def set_dl_on_epoch_begin(self, epoch):
