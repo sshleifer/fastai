@@ -44,7 +44,7 @@ def main(
         flip_lr_p=0.5,
         stem1: Param('nchan for xresnet', int)=32, stem2: Param('nchan for xresnet', int)=32,
         inplanes: Param('nchan for xresnet', int)=64,
-        sched_type: Param('for curriculum', str)='easy_first',
+        sched_type: Param('for curriculum', str)='No',
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
@@ -98,9 +98,12 @@ def main(
     # save results to a file like 2019-05-12_22:10/metrics.csv
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
-    cc = CurriculumCallback(learn, get_data_fn, epochs, woof, sched_type=sched_type)
+    callbacks = [csv_logger]
+    if sched_type != 'no':
+        cc = CurriculumCallback(learn, get_data_fn, epochs, woof, sched_type=sched_type)
+        callbacks.append(cc)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
-                        callbacks=[csv_logger, cc])
+                        callbacks=callbacks)
     if save:
         learn.save('final_classif')
     learn.destroy()
