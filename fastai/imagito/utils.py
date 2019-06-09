@@ -9,9 +9,13 @@ import time
 import pickle
 import gzip
 
+from torch import nn
 from fastai.vision import *
 from fastai.imagito.utils import *
 from fastai.imagito.classes import ClassUtils
+from fastai.datasets import *
+from fastai.torch_core import *
+from fastai.vision.data import *
 
 
 def get_date_str(seconds=False):

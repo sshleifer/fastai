@@ -7,6 +7,7 @@ from torchvision.models import *
 from fastai.vision.models.xresnet import *
 from fastai.vision.models.xresnet2 import *
 from fastai.vision.models.presnet import *
+from fastai.callbacks.mixup import CurriculumCallback
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
@@ -41,11 +42,14 @@ def main(
         opt: Param("Optimizer (adam,rms,sgd)", str)='adam',
         arch: Param("Architecture (xresnet34, xresnet50, presnet34, presnet50)", str)='xresnet50',
         dump: Param("Print model; don't train", int)=0,
+        fp16: Param("Whether to train at half precision", int)=1,
         ):
     "Distributed training of Imagenette."
+    param_dict =  locals()
+    print(param_dict)
 
-    gpu = setup_distrib(gpu)
-    if gpu is None: bs *= torch.cuda.device_count()
+    if gpu != 'ignore': gpu = setup_distrib(gpu)
+    if gpu is None and gpu != 'ignore': bs *= torch.cuda.device_count()
     if   opt=='adam' : opt_func = partial(optim.Adam, betas=(mom,alpha), eps=eps)
     elif opt=='rms'  : opt_func = partial(optim.RMSprop, alpha=alpha, eps=eps)
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
@@ -64,9 +68,11 @@ def main(
             )
     if dump: print(learn.model); exit()
     if mixup: learn = learn.mixup(alpha=mixup)
-    learn = learn.to_fp16(dynamic=True)
+    if fp16: learn = learn.to_fp16(dynamic=True)
     if gpu is None:       learn.to_parallel()
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
-
-    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3)
+    csv_logger = CSVLogger(learn, filename='metrics')
+    curriculum_callback = CurriculumCallback(learn, epochs)
+    callbacks = [csv_logger, curriculum_callback]
+    learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3, callbacks=callbacks)
 

@@ -2,6 +2,32 @@
 from ..torch_core import *
 from ..callback import *
 from ..basic_train import Learner, LearnerCallback
+from ..imagito.sample_hardness import make_hardness_filter_func
+import numpy as np
+
+
+class CurriculumCallback(LearnerCallback):
+    sets_dl = True  # FIXME: redundant with method name
+
+    def __init__(self, learn: Learner, num_epochs):
+        # FIXME: try to get learn.num_epochs
+        super().__init__(learn)
+        self.original_dl = learn.data.train_dl
+
+        step = 1/ num_epochs
+        upper_bound = np.arange(1., 0, -step)  # start easy
+        self.sched = list(zip(upper_bound - step, upper_bound))
+        self.woof = 'woof' in str(self.original_dl.dataset.items[0])
+        print(self.sched)
+        #self.woof = self
+
+    def set_dl_on_epoch_begin(self, epoch):
+        filter_func = make_hardness_filter_func(*self.sched[epoch], self.woof)
+        return self.original_dl.filter_by_func(filter_func)
+
+
+
+
 
 class MixUpCallback(LearnerCallback):
     "Callback that creates the mixed-up input and target."
