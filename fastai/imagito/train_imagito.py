@@ -45,6 +45,7 @@ def main(
         stem1: Param('nchan for xresnet', int)=32, stem2: Param('nchan for xresnet', int)=32,
         inplanes: Param('nchan for xresnet', int)=64,
         sched_type: Param('for curriculum', str)='No',
+        pretrained: Param('Pretrained weights', bool)=False,
         ):
     "Distributed training of Imagenette."
     params_dict = locals().copy()
@@ -62,7 +63,7 @@ def main(
     # Work around filter_func issue
     n_classes = len(classes) if classes is not None else 10
     m = xresnet50_2 if arch is None else globals()[arch]
-    mod = m(c_out=n_classes, stem1=stem1, stem2=stem2, inplanes=inplanes)
+    mod = m(pretrained=pretrained, c_out=n_classes, stem1=stem1, stem2=stem2, inplanes=inplanes)
     params_dict['n_train'] = len(data.train_dl.dataset)
     params_dict['n_val'] = len(data.valid_dl.dataset)
     params_dict['hostname'] = HOSTNAME
