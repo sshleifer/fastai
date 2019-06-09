@@ -12,6 +12,8 @@ import gzip
 from fastai.vision import *
 from fastai.imagito.utils import *
 from fastai.imagito.classes import ClassUtils
+from fastai.datasets import  URLs
+
 
 
 def get_date_str(seconds=False):
