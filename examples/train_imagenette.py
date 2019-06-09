@@ -7,6 +7,7 @@ from torchvision.models import *
 from fastai.vision.models.xresnet import *
 from fastai.vision.models.xresnet2 import *
 from fastai.vision.models.presnet import *
+from fastai.callbacks.mixup import CurriculumCallback
 
 torch.backends.cudnn.benchmark = True
 fastprogress.MAX_COLS = 80
@@ -71,6 +72,7 @@ def main(
     if gpu is None:       learn.to_parallel()
     elif num_distrib()>1: learn.to_distributed(gpu) # Requires `-m fastai.launch`
     csv_logger = CSVLogger(learn, filename='metrics')
-    callbacks = [csv_logger]
+    curriculum_callback = CurriculumCallback(learn)
+    callbacks = [csv_logger, curriculum_callback]
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3, callbacks=callbacks)
 

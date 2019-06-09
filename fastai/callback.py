@@ -253,6 +253,8 @@ class CallbackHandler():
     def set_dl(self, dl:DataLoader):
         "Set the current `dl` used."
         if hasattr(self, 'cb_dl'): self.callbacks.remove(self.cb_dl)
+        # import ipdb; ipdb.set_trace()
+        # FIXME: is this the right place to hack in?
         if isinstance(dl.dataset, Callback):
             self.callbacks.append(dl.dataset)
             self.cb_dl = dl.dataset

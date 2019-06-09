@@ -86,16 +86,20 @@ def fit(epochs:int, learn:BasicLearner, callbacks:Optional[CallbackList]=None, m
     "Fit the `model` on `data` and learn using `loss_func` and `opt`."
     assert len(learn.data.train_dl) != 0, f"""Your training dataloader is empty, can't train a model.
         Use a smaller batch size (batch size={learn.data.train_dl.batch_size} for {len(learn.data.train_dl.dataset)} elements)."""
+    curric_callbacks = [c for c in callbacks if getattr(c, 'sets_dl', False)]
+    assert len(curric_callbacks) == 1
     cb_handler = CallbackHandler(callbacks, metrics)
     pbar = master_bar(range(epochs))
     cb_handler.on_train_begin(epochs, pbar=pbar, metrics=metrics)
-
     exception=False
     try:
         for epoch in pbar:
             learn.model.train()
             cb_handler.set_dl(learn.data.train_dl)
-            cb_handler.on_epoch_begin()
+            for c in curric_callbacks:
+                learn.data.train_dl = c.set_dl_on_epoch_begin(epoch)
+            if True:
+                cb_handler.on_epoch_begin()
             for xb,yb in progress_bar(learn.data.train_dl, parent=pbar):
                 xb, yb = cb_handler.on_batch_begin(xb, yb)
                 loss = loss_batch(learn.model, xb, yb, learn.loss_func, learn.opt, cb_handler)
