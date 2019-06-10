@@ -90,7 +90,6 @@ def fit(epochs:int, learn:BasicLearner, callbacks:Optional[CallbackList]=None, m
     pbar = master_bar(range(epochs))
     cb_handler.on_train_begin(epochs, pbar=pbar, metrics=metrics)
     curric_callbacks = [c for c in callbacks if getattr(c, 'sets_dl', False)]
-    assert len(curric_callbacks) == 1
     exception=False
     try:
         for epoch in pbar:
