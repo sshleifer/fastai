@@ -26,6 +26,7 @@ SCHED_TYPE = 'sched_type'
 CURRIC_EXPERIMENTS_EASY = get_18({SCHED_TYPE: 'easy_first'})
 CURRIC_EXPERIMENTS_HARD = get_18({SCHED_TYPE: 'hard_first'})
 CURRIC_EXPERIMENTS_RAMP = get_18({SCHED_TYPE: 'ramp'})
+CURRIC_EXPERIMENTS_RAMP_REVERSED = get_18({SCHED_TYPE: 'ramp-reversed'})
 
 
 BASE = {
@@ -70,6 +71,6 @@ PGS = [pgs]
 
 
 if __name__ == '__main__':
-    run_many(CURRIC_EXPERIMENTS_HARD)
+    run_many(CURRIC_EXPERIMENTS_RAMP_REVERSED[10:])
     #run_many(C1)
     #for pgrid in PGS: run_many(pgrid)

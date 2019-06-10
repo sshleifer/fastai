@@ -51,6 +51,8 @@ class CurriculumCallback(LearnerCallback):
         elif sched_type == 'ramp':
             assert len(RAMP_SCHED) == num_epochs
             self.sched = RAMP_SCHED
+        elif sched_type == 'ramp-reversed':
+            self.sched = list(reversed(RAMP_SCHED))
         else:
             raise ValueError(sched_type)
 
