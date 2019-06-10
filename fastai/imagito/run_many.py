@@ -70,6 +70,6 @@ PGS = [pgs]
 
 
 if __name__ == '__main__':
-    run_many(CURRIC_EXPERIMENTS_HARD)
+    run_many(CURRIC_EXPERIMENTS_RAMP)
     #run_many(C1)
     #for pgrid in PGS: run_many(pgrid)
