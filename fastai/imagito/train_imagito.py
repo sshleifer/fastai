@@ -18,7 +18,7 @@ fastprogress.MAX_COLS = 80
 
 
 HOSTNAME = socket.gethostname()
-NO_CURRICULUM = 'NO_CURRICULUM'
+
 
 @call_parse
 def main(

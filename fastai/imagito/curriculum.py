@@ -35,6 +35,8 @@ RAMP_SCHED = [
     HARD_HALF,
 ]
 
+SCHED_TYPES = ['easy_first', 'hard_first', 'ramp', 'reverse_ramp']
+
 
 class CurriculumCallback(LearnerCallback):
     sets_dl = True  # FIXME: redundant with method name

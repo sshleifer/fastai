@@ -10,9 +10,8 @@ import pickle
 import gzip
 
 from fastai.vision import *
-from fastai.imagito.utils import *
 from fastai.imagito.classes import ClassUtils
-
+NO_CURRICULUM = 'NO_CURRICULUM'
 
 def get_date_str(seconds=False):
     if seconds:

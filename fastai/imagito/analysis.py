@@ -1,5 +1,4 @@
 from fastai.imagito.nb_utils import *
-#from fastai.imagito.strat_meta import assign_m2, assign_meta_strat
 from fastai.imagito.utils import *
 import pandas as pd
 from sklearn.linear_model import LinearRegression, LassoCV
@@ -151,6 +150,7 @@ STRAT2DIFFICULTY = {
  'hard-0.0-0.25': hard,
  'hard-0.05-0.5': hard_clip,
  'hard-0.25-1.0': easy}
+SCHED_TYPE = 'sched_type'
 
 def preprocess_and_assign_strat(df):
     DS_PATH = 'ds_path'
@@ -171,6 +171,9 @@ def preprocess_and_assign_strat(df):
     # Path Hardness bug
     msk = ((df['woof']) & (df['n_train'] == WOOF_SIZE) & (df[STRAT].str.startswith('hard')))
     df.loc[msk, STRAT] = ALL_DATA_STRAT
+
+    msk = df[SCHED_TYPE] != NO_CURRICULUM
+    df.loc[msk, STRAT] = df.loc[msk, SCHED_TYPE]
     df[META_STRAT] = df[STRAT].apply(assign_meta_strat)
     return df
 
@@ -471,11 +474,12 @@ def assign_m2(cti):
     cti.loc[~cti[META_STRAT].isin(M3), 'M2'] = 'Random'
     cti.loc[cti[META_STRAT] == 'distillation', 'M2'] = 'distillation'
     return cti
-
-
+SCHED_TYPES = ['easy_first', 'hard_first', 'ramp', 'ramp-reversed']
+MAX_PROXY_ACC = 'Max Proxy Acc'
 def assign_meta_strat(x:str):
     if x in EPSTRATS: return 'EP'
     if x==ALL_DATA_STRAT: return 'Baseline'
+    if x in SCHED_TYPES: return x
     if x.startswith('hard'):
         return STRAT2DIFFICULTY[x]
     if x.startswith('Half Classes') or x.startswith('Other Half Classes'):
