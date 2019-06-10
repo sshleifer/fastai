@@ -7,7 +7,7 @@ from fastai.basic_data import DeviceDataLoader
 
 def make_easy_to_hard_sched(num_epochs):
     phases = num_epochs / 2
-    return [(.5 , 1)] * phases[0] + [(0.03, .5)] * phases[1]
+    return [(.5 , 1)] * phases + [(0.03, .5)] * phases
 
 EASY_HALF = (0.5, 1)
 MIDDLE_HALF = (.25, .75)

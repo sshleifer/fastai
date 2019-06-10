@@ -98,6 +98,7 @@ def fit(epochs:int, learn:BasicLearner, callbacks:Optional[CallbackList]=None, m
             cb_handler.set_dl(learn.data.train_dl)
             for c in curric_callbacks:
                 learn.data.train_dl = c.set_dl_on_epoch_begin(epoch)
+
             cb_handler.on_epoch_begin()
             for xb,yb in progress_bar(learn.data.train_dl, parent=pbar):
                 xb, yb = cb_handler.on_batch_begin(xb, yb)
