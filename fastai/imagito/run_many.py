@@ -16,13 +16,15 @@ HLB = 'hardness_lower_bound'
 
 
 def get_18(sampling_dct):
-
     pg = []
     for k in GRID_18:
         new = k.copy()
         new.update(sampling_dct)
         pg.append(new)
     return pg
+SCHED_TYPE = 'sched_type'
+CURRIC_EXPERIMENTS_EASY = get_18({SCHED_TYPE: 'easy_first'})
+CURRIC_EXPERIMENTS_HARD = get_18({SCHED_TYPE: 'hard_first'})
 
 BASE = {
     'lr': FINER_LR_GRID,
@@ -66,6 +68,6 @@ PGS = [pgs]
 
 
 if __name__ == '__main__':
-    run_many(FULL_GRID_SWOOF)
+    run_many(CURRIC_EXPERIMENTS_EASY)
     #run_many(C1)
     #for pgrid in PGS: run_many(pgrid)

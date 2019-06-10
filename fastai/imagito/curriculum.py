@@ -9,6 +9,32 @@ def make_easy_to_hard_sched(num_epochs):
     phases = num_epochs / 2
     return [(.5 , 1)] * phases[0] + [(0.03, .5)] * phases[1]
 
+EASY_HALF = (0.5, 1)
+MIDDLE_HALF = (.25, .75)
+HARD_HALF = (0.03, 0.53)
+RAMP_SCHED = [
+    EASY_HALF,
+    EASY_HALF,
+    EASY_HALF,
+    EASY_HALF,
+    MIDDLE_HALF,
+    EASY_HALF,
+    EASY_HALF,
+    HARD_HALF,
+    EASY_HALF,
+    MIDDLE_HALF,
+    EASY_HALF,
+    EASY_HALF,
+    HARD_HALF,
+    HARD_HALF,
+    MIDDLE_HALF,
+    HARD_HALF,
+    EASY_HALF,
+    HARD_HALF,
+    MIDDLE_HALF,
+    HARD_HALF,
+]
+
 
 class CurriculumCallback(LearnerCallback):
     sets_dl = True  # FIXME: redundant with method name
@@ -22,6 +48,9 @@ class CurriculumCallback(LearnerCallback):
             self.sched = make_easy_to_hard_sched(num_epochs)
         elif self.sched_type == 'hard_first':
             self.sched = list(reversed(make_easy_to_hard_sched(num_epochs)))
+        elif sched_type == 'ramp':
+            assert len(RAMP_SCHED) == num_epochs
+            self.sched = RAMP_SCHED
         else:
             raise ValueError(sched_type)
 
