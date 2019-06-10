@@ -18,7 +18,7 @@ fastprogress.MAX_COLS = 80
 
 
 HOSTNAME = socket.gethostname()
-
+NO_CURRICULUM = 'NO_CURRICULUM'
 
 @call_parse
 def main(
@@ -44,7 +44,7 @@ def main(
         flip_lr_p=0.5,
         stem1: Param('nchan for xresnet', int)=32, stem2: Param('nchan for xresnet', int)=32,
         inplanes: Param('nchan for xresnet', int)=64,
-        sched_type: Param('for curriculum', str)='No',
+        sched_type: Param('for curriculum', str)=NO_CURRICULUM,
         pretrained: Param('Pretrained weights', bool)=False,
         ):
     "Distributed training of Imagenette."
@@ -55,7 +55,6 @@ def main(
     elif opt=='rms'  : opt_func = partial(optim.RMSprop, alpha=alpha, eps=eps)
     elif opt=='sgd'  : opt_func = partial(optim.SGD, momentum=mom)
     if classes is not None and isinstance(classes, str): classes = [int(i) for i in classes.split(',')]
-
     filter_func = make_hardness_filter_func(hardness_lower_bound, hardness_upper_bound, woof)
     if (hardness_lower_bound, hardness_upper_bound) != (0., 1.): assert sample == 1.
     data = get_data(size, woof, bs, sample, classes, filter_func=filter_func, flip_lr_p=flip_lr_p)
@@ -100,7 +99,7 @@ def main(
     # (CSVLogger model_path/filename + .csv)
     csv_logger = CSVLogger(learn, filename='metrics')
     callbacks = [csv_logger]
-    if sched_type != 'no':
+    if sched_type != NO_CURRICULUM:
         cc = CurriculumCallback(learn, get_data_fn, epochs, woof, sched_type=sched_type)
         callbacks.append(cc)
     learn.fit_one_cycle(epochs, lr, div_factor=10, pct_start=0.3,
