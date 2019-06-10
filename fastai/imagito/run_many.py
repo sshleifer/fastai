@@ -25,6 +25,7 @@ def get_18(sampling_dct):
 SCHED_TYPE = 'sched_type'
 CURRIC_EXPERIMENTS_EASY = get_18({SCHED_TYPE: 'easy_first'})
 CURRIC_EXPERIMENTS_HARD = get_18({SCHED_TYPE: 'hard_first'})
+CURRIC_EXPERIMENTS_RAMP = get_18({SCHED_TYPE: 'ramp'})
 
 BASE = {
     'lr': FINER_LR_GRID,
@@ -68,6 +69,6 @@ PGS = [pgs]
 
 
 if __name__ == '__main__':
-    run_many(CURRIC_EXPERIMENTS_EASY)
+    run_many(CURRIC_EXPERIMENTS_HARD)
     #run_many(C1)
     #for pgrid in PGS: run_many(pgrid)
