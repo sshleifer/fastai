@@ -31,7 +31,7 @@ CURRIC_EXPERIMENTS_RAMP_REVERSED = get_18({SCHED_TYPE: 'ramp-reversed'})
 EXPERIMENTS_32 = get_18({'size': 32, 'woof': True})
 EXPERIMENTS_64 = get_18({'size': 64, 'woof': True})
 
-EXPERIMENTS_2_EPOCHS = get_18({'epochs': 2}) + get_18({'epochs': 2, 'woof': True})
+EXPERIMENTS_2_EPOCHS = get_18({'epochs': 2}) + get_18({'epochs': 2, 'woof': 1})
 
 BASE = {
     'lr': FINER_LR_GRID,
