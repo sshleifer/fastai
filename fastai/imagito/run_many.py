@@ -23,13 +23,15 @@ def get_18(sampling_dct):
         pg.append(new)
     return pg
 SCHED_TYPE = 'sched_type'
-CURRIC_EXPERIMENTS_EASY = get_18({SCHED_TYPE: 'easy_first'})
-CURRIC_EXPERIMENTS_HARD = get_18({SCHED_TYPE: 'hard_first'})
+#CURRIC_EXPERIMENTS_EASY = get_18({SCHED_TYPE: 'easy_first', 'woof': True})
+#CURRIC_EXPERIMENTS_HARD = get_18({SCHED_TYPE: 'hard_first', 'woof': True})
 CURRIC_EXPERIMENTS_RAMP = get_18({SCHED_TYPE: 'ramp'})
 CURRIC_EXPERIMENTS_RAMP_REVERSED = get_18({SCHED_TYPE: 'ramp-reversed'})
 
-EXPERIMENTS_32 = get_18({'size': 32})
-EXPERIMENTS_64 = get_18({'size': 64})
+EXPERIMENTS_32 = get_18({'size': 32, 'woof': True})
+EXPERIMENTS_64 = get_18({'size': 64, 'woof': True})
+
+EXPERIMENTS_2_EPOCHS = get_18({'epochs': 2}) + get_18({'epochs': 2, 'woof': True})
 
 BASE = {
     'lr': FINER_LR_GRID,
@@ -66,13 +68,6 @@ def run_many(pg):
             print(e, pars)
     try_send_sms(f'Finished experiments: failures: {failures}')
 
-PGS = [pgs]
-# import fire
-# def pick_grid_and_run(c=0):
-#     [C1, C2, C3][c]
-
 
 if __name__ == '__main__':
-    run_many(EXPERIMENTS_32)
-    #run_many(C1)
-    #for pgrid in PGS: run_many(pgrid)
+    run_many(EXPERIMENTS_2_EPOCHS)

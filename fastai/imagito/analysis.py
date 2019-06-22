@@ -17,7 +17,7 @@ ZACC, DATE = 'z_acc', 'date'
 NCONFIGS = 'N_configs'
 HOSTCOL = 'hostname'
 DEFAULT_LR = 0.0030
-DEFAULT_CONFIG_COLS = ['size', 'label_smoothing', 'lr', 'flip_lr_p', 'woof', 'arch', 'stem1',
+DEFAULT_CONFIG_COLS = ['label_smoothing', 'lr', 'flip_lr_p', 'woof', 'arch', 'stem1',
                        'stem2', 'opt']
 ALL_DATA_STRAT = 'All Classes-1.0'
 XR50 = 'xresnet_50'
@@ -57,6 +57,7 @@ def best_epoch(df):
         accuracy=gb.accuracy.max(), epochs_run=gb.epoch.max() + 1, cost=gb['seconds'].sum())
     exp_df[ADJ_ACC] = exp_df.groupby(['size', 'woof'])[ACCURACY].transform(zscore)
     exp_df[NSTEPS] = (exp_df.n_train * exp_df.epochs) / IM_STEPS_20
+    #if SCHED_TYPES
     return exp_df[exp_df['epochs_run'] == exp_df['epochs']]
 
 
@@ -174,6 +175,10 @@ def preprocess_and_assign_strat(df):
 
     msk = df[SCHED_TYPE] != NO_CURRICULUM
     df.loc[msk, STRAT] = df.loc[msk, SCHED_TYPE]
+
+    #msk  = df['size'] != 128
+    #df.loc[msk, STRAT] = 'size_' + df.loc[msk, 'size'].astype(str)
+    #df.loc[msk, 'size'] = 128
     df[META_STRAT] = df[STRAT].apply(assign_meta_strat)
     return df
 
@@ -194,16 +199,54 @@ def make_9_19_data_fairer(df, ref_epoch=10, gb_cols=DEFAULT_CONFIG_COLS):
     ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
     return ax
 
-def _cull_data(df, ref_epoch, acc_col):
-    ep9 = df[df['epoch'] == ref_epoch - 1].set_index(DATE)
-    ep19 = df.e19.set_index(DATE)
-    pl = ep9.rename(columns={acc_col: 'proxy'}).assign(targ=ep19[acc_col])
-    return pl
 
+DEFAULT_CONFIG_DF = pd.Series({'label_smoothing': False,
+                  'lr': 0.003,
+                  'flip_lr_p': 0.5,
+                  'woof': 0,
+                  'arch': 'xresnet_50',
+                  'stem1': 32,
+                  'stem2': 32,
+                  'opt': 'adam'}).to_frame().T
+DEFAULT_ACC = 'default_acc'
+FDACC = 'final_default_acc'
+RUN_ACC = 'best_acc'
+def make_early_stopping_data(df, ref_epoch=5,  tol=0., acc_col=ACCURACY):
+    idx_cols = [DATE, HOSTCOL]
+    df = df.sort_values([DATE, HOSTCOL])
+    exp_df = df.exp_df
+
+    default_experiments = df.merge(DEFAULT_CONFIG_DF, how='inner')
+    ref_mask_fn =lambda df: df['epoch'] <= ref_epoch - 1
+    default_perf = default_experiments.loc[ref_mask_fn].groupby(STRAT)[ACCURACY].max().to_frame(DEFAULT_ACC).reset_index()
+    final_perf = default_experiments.groupby([STRAT, DATE, HOSTCOL])[ACCURACY].max().groupby([STRAT]).last().to_frame(
+        FDACC
+    ).reset_index()
+    best_acc_for_run = df.groupby([STRAT, DATE, HOSTCOL] + DEFAULT_CONFIG_COLS)[ACCURACY].max().groupby([STRAT] + DEFAULT_CONFIG_COLS).last().to_frame(
+        RUN_ACC
+    ).reset_index()
+    candidates = df.loc[ref_mask_fn].groupby([STRAT] + DEFAULT_CONFIG_COLS).last().reset_index().merge(default_perf, how='left')
+    candidates2 = candidates.merge(best_acc_for_run, how='left')
+    candidates3 = candidates2.merge(final_perf, how='left')
+    return candidates3
+
+def scorer(c3, tol):
+    c3['cancel'] = (c3[ACCURACY] + tol) < c3[DEFAULT_ACC]
+    c3['run_loses'] = c3[RUN_ACC] < c3[FDACC]
+    c3 = c3
+    missed_good_frac = (1 - c3[c3['cancel']].run_loses.mean())
+    n_cancelled = c3['cancel'].sum()
+    win_rate = (1-c3[~c3['cancel']].run_loses.mean())
+    savings_rate = c3['cancel'].mean()
+    return {'regret_rate': missed_good_frac, 'savings_rate': savings_rate, 'win_rate': win_rate, 'n_cancelled': n_cancelled}
+
+
+    #pl = ep9.rename(columns={acc_col: 'proxy'}).assign(targ=ep19[acc_col])
+    #return pl
 
 
 def make9_19_data(df, acc_col=ACCURACY, ref_epoch=10):
-    pl = _cull_data(df, ref_epoch, acc_col)
+    pl = make_early_stopping_data(df, ref_epoch, acc_col)
     corr = pl.corr().loc['targ', 'proxy']
     ax = pl.plot.scatter(x='proxy', y='targ')
     ax.set_title(f'corr={corr:.2f}, n={pl.shape[0]}')
@@ -275,11 +318,7 @@ def assign_resid(cti, fnames, y):
     return cti
     #return cti[y] - clf.predict(X.fillna(0))
 
-distill_res = pd.Series(
-
-
-
-{'Pearson': np.nan,
+distill_res = pd.Series({'Pearson': np.nan,
  'Pearson Pos': np.nan,
  'Spearman': np.nan,
  'Spearman Pos': .01,
@@ -334,15 +373,15 @@ def make_cor_tab(exp_df, _gb=[STRAT] + DEFAULT_CONFIG_COLS, agg_col=ACCURACY):
     tab = cor_tab.join(run_grouped_regs(exp_df, agg_col=agg_col))
     # run_grouped_regs(exp_df, agg_col=agg_col)
     tab['Seconds'] = (exp_df.s128.just_xr50.groupby(STRAT)['cost'].median())
+    #tab.loc[SCHED_TYPES, 'Seconds'] = tab.loc['Half Classes-1.0', 'Seconds']
     tab.loc['distillation'] = distill_res
     # maybe do n_train * epochs or something
-    tab['Relative Cost'] = (tab['Seconds'] / 473.).round(4)
+    tab['Relative Cost'] = (tab['Seconds'] / 473)
     tab[META_STRAT] = [assign_meta_strat(x) for x in tab.index]
     tab = assign_m2(tab)
-    tab = assign_resid(tab, ['Relative Cost'], 'r2').round(4)
-    tab = assign_resid(tab, ['Relative Cost'], 'r2').round(4)
+    tab = assign_resid(tab, ['Relative Cost'], 'r2')
+    return tab.round(4)
 
-    return tab
 
 def regress_aligned_pairs(exp_df, proxy_strat, agg_col=ACCURACY):
     # find all configs that were run for proxy and also run for target.
@@ -479,6 +518,7 @@ MAX_PROXY_ACC = 'Max Proxy Acc'
 def assign_meta_strat(x:str):
     if x in EPSTRATS: return 'EP'
     if x==ALL_DATA_STRAT: return 'Baseline'
+    if x.startswith('size'): return 'Size'
     if x in SCHED_TYPES: return x
     if x.startswith('hard'):
         return STRAT2DIFFICULTY[x]
