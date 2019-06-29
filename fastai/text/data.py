@@ -290,7 +290,10 @@ class TokenizeProcessor(PreProcessor):
         return self.tokenizer._process_all_1(_join_texts([item], self.mark_fields, self.include_bos, self.include_eos))[0]
 
     def process(self, ds):
-        ds.items = _join_texts(ds.items, self.mark_fields, self.include_bos, self.include_eos)
+        # Hack to load Tokenizer saved before self.include_bos was a thing.
+        include_bos = getattr(self, 'include_bos', True)
+        include_eos = getattr(self, 'include_eos', True)
+        ds.items = _join_texts(ds.items, self.mark_fields, include_bos, include_eos)
         tokens = []
         for i in progress_bar(range(0,len(ds),self.chunksize), leave=False):
             tokens += self.tokenizer.process_all(ds.items[i:i+self.chunksize])

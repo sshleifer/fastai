@@ -43,7 +43,7 @@ np.set_printoptions(precision=6, threshold=50, edgeitems=4, linewidth=120)
 def num_cpus()->int:
     "Get number of cpus"
     try:                   return len(os.sched_getaffinity(0))
-    except AttributeError: return os.cpu_count()
+    except AttributeError: return os.cpu_count() - 2
 
 _default_cpus = min(16, num_cpus())
 defaults = SimpleNamespace(cpus=_default_cpus, cmap='viridis', return_fig=False, silent=False)
