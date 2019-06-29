@@ -21,13 +21,14 @@ def loss_batch(model:nn.Module, xb:Tensor, yb:Tensor, loss_func:OptLossFunc=None
                cb_handler:Optional[CallbackHandler]=None)->Tuple[Union[Tensor,int,float,str]]:
     "Calculate loss and metrics for a batch, call out to callbacks as necessary."
     cb_handler = ifnone(cb_handler, CallbackHandler())
-    if not is_listy(xb): xb = [xb]
-    if not is_listy(yb): yb = [yb]
-    out = model(*xb)
+    #if not is_listy(xb): xb = [xb]
+    #if not is_listy(yb): yb = [yb]
+    #out = model(*xb)
+    out = model(xb, yb)
     out = cb_handler.on_loss_begin(out)
 
     if not loss_func: return to_detach(out), yb[0].detach()
-    loss = loss_func(out, *yb)
+    loss = loss_func(*out)
 
     if opt is not None:
         loss,skip_bwd = cb_handler.on_backward_begin(loss)
