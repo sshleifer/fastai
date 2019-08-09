@@ -125,15 +125,16 @@ class SortishSampler(Sampler):
         sort_idx = np.concatenate((ck_idx[0], sort_idx))
         return iter(sort_idx)
 
-def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwards:bool=False) -> Tuple[LongTensor, LongTensor]:
+def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwards:bool=False, max_len=256) -> Tuple[LongTensor, LongTensor]:
     "Function that collect samples and adds padding. Flips token order if needed"
     samples = to_data(samples)
-    max_len = max([len(s[0]) for s in samples])
+    max_len = min(max([len(s[0]) for s in samples]), max_len)
     res = torch.zeros(len(samples), max_len).long() + pad_idx
     if backwards: pad_first = not pad_first
     for i,s in enumerate(samples):
-        if pad_first: res[i,-len(s[0]):] = LongTensor(s[0])
-        else:         res[i,:len(s[0]):] = LongTensor(s[0])
+        toks = LongTensor(s[0][:-max_len])
+        if pad_first: res[i,-len(toks):] = toks
+        else:         res[i,:len(toks):] = toks
     if backwards: res = res.flip(1)
     return res, tensor(np.array([s[1] for s in samples]))
 
