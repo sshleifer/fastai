@@ -134,7 +134,7 @@ def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwa
     res = torch.zeros(len(samples), max_len).long() + pad_idx
     if backwards: pad_first = not pad_first
     for i,s in enumerate(samples):
-        toks = LongTensor(s[0][:-max_len])
+        toks = LongTensor(s[0][-max_len:])
         if pad_first: res[i,-len(toks):] = toks
         else:         res[i,:len(toks):] = toks
     if backwards: res = res.flip(1)
@@ -142,7 +142,7 @@ def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwa
 
 def _get_processor(tokenizer:Tokenizer=None, vocab:Vocab=None, chunksize:int=10000, max_vocab:int=60000,
                    min_freq:int=2, mark_fields:bool=False, include_bos:bool=True, include_eos:bool=False):
-    return [TokenizeProcessor(tokenizer=tokenizer, chunksize=chunksize, 
+    return [TokenizeProcessor(tokenizer=tokenizer, chunksize=chunksize,
                               mark_fields=mark_fields, include_bos=include_bos, include_eos=include_eos),
             NumericalizeProcessor(vocab=vocab, max_vocab=max_vocab, min_freq=min_freq)]
 
@@ -197,13 +197,13 @@ class TextDataBunch(DataBunch):
                 min_freq:int=2, mark_fields:bool=False, include_bos:bool=True, include_eos:bool=False, **kwargs) -> DataBunch:
         "Create a `TextDataBunch` from DataFrames. `kwargs` are passed to the dataloader creation."
         processor = _get_processor(tokenizer=tokenizer, vocab=vocab, chunksize=chunksize, max_vocab=max_vocab,
-                                   min_freq=min_freq, mark_fields=mark_fields, 
+                                   min_freq=min_freq, mark_fields=mark_fields,
                                    include_bos=include_bos, include_eos=include_eos)
         if classes is None and is_listy(label_cols) and len(label_cols) > 1: classes = label_cols
         src = ItemLists(path, TextList.from_df(train_df, path, cols=text_cols, processor=processor),
                         TextList.from_df(valid_df, path, cols=text_cols, processor=processor))
         if cls==TextLMDataBunch: src = src.label_for_lm()
-        else: 
+        else:
             if label_delim is not None: src = src.label_from_df(cols=label_cols, classes=classes, label_delim=label_delim)
             else: src = src.label_from_df(cols=label_cols, classes=classes)
         if test_df is not None: src.add_test(TextList.from_df(test_df, path, cols=text_cols))
@@ -214,7 +214,7 @@ class TextDataBunch(DataBunch):
     def from_csv(cls, path:PathOrStr, csv_name, valid_pct:float=0.2, test:Optional[str]=None,
                  tokenizer:Tokenizer=None, vocab:Vocab=None, classes:Collection[str]=None, delimiter:str=None, header='infer',
                  text_cols:IntsOrStrs=1, label_cols:IntsOrStrs=0, label_delim:str=None,
-                 chunksize:int=10000, max_vocab:int=60000, min_freq:int=2, 
+                 chunksize:int=10000, max_vocab:int=60000, min_freq:int=2,
                  mark_fields:bool=False, include_bos:bool=True, include_eos:bool=False, **kwargs) -> DataBunch:
         "Create a `TextDataBunch` from texts in csv files. `kwargs` are passed to the dataloader creation."
         df = pd.read_csv(Path(path)/csv_name, header=header, delimiter=delimiter)
@@ -224,7 +224,7 @@ class TextDataBunch(DataBunch):
         test_df = None if test is None else pd.read_csv(Path(path)/test, header=header, delimiter=delimiter)
         return cls.from_df(path, train_df, valid_df, test_df, tokenizer=tokenizer, vocab=vocab, classes=classes, text_cols=text_cols,
                            label_cols=label_cols, label_delim=label_delim, chunksize=chunksize, max_vocab=max_vocab,
-                           min_freq=min_freq, mark_fields=mark_fields, 
+                           min_freq=min_freq, mark_fields=mark_fields,
                            include_bos=include_bos, include_eos=include_eos, **kwargs)
 
     @classmethod
@@ -286,7 +286,7 @@ class Text(ItemBase):
 
 class TokenizeProcessor(PreProcessor):
     "`PreProcessor` that tokenizes the texts in `ds`."
-    def __init__(self, ds:ItemList=None, tokenizer:Tokenizer=None, chunksize:int=10000, 
+    def __init__(self, ds:ItemList=None, tokenizer:Tokenizer=None, chunksize:int=10000,
                  mark_fields:bool=False, include_bos:bool=True, include_eos:bool=False):
         self.tokenizer,self.chunksize,self.mark_fields = ifnone(tokenizer, Tokenizer()),chunksize,mark_fields
         self.include_bos, self.include_eos = include_bos, include_eos
@@ -409,12 +409,12 @@ def apply_rules(text, pre_rules=None, post_rules=None):
     for r in ifnone(pre_rules, defaults.text_pre_rules): text = r(text)
     toks = text.split()
     for r in ifnone(post_rules, defaults.text_post_rules): toks = r(toks)
-    return ' '.join(toks) 
+    return ' '.join(toks)
 
 def get_default_size(texts, max_vocab_sz):
     "Either max_vocab_sz or one quarter of the number of unique words in `texts`"
     cnt = Counter()
-    for t in texts: 
+    for t in texts:
         cnt.update(t.split())
         if len(cnt)//4 > max_vocab_sz: return max_vocab_sz
     res = len(cnt)//4
@@ -424,7 +424,7 @@ def get_default_size(texts, max_vocab_sz):
 full_char_coverage_langs = ["bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", "ga", "hr", "hu",
                        "it","lt","lv","mt","nl","pl","pt","ro","sk","sl","sv"] # all European langs
 
-def train_sentencepiece(texts:Collection[str], path:PathOrStr, pre_rules: ListRules=None, post_rules:ListRules=None, 
+def train_sentencepiece(texts:Collection[str], path:PathOrStr, pre_rules: ListRules=None, post_rules:ListRules=None,
     vocab_sz:int=None, max_vocab_sz:int=30000, model_type:str='unigram', max_sentence_len:int=20480, lang='en',
     char_coverage=None, tmp_dir='tmp'):
     "Train a sentencepiece tokenizer on `texts` and save it in `path/tmp_dir`"
@@ -448,7 +448,7 @@ class SPProcessor(PreProcessor):
     "`PreProcessor` that tokenizes and numericalizes with `sentencepiece`"
     def __init__(self, ds:ItemList=None, pre_rules: ListRules=None, post_rules:ListRules=None, vocab_sz:int=None,
                  max_vocab_sz:int=30000, model_type:str='unigram', max_sentence_len:int=20480, lang='en',
-                 char_coverage=None, tmp_dir='tmp', mark_fields:bool=False, include_bos:bool=True, 
+                 char_coverage=None, tmp_dir='tmp', mark_fields:bool=False, include_bos:bool=True,
                  include_eos:bool=False, sp_model=None, sp_vocab=None, n_cpus:int=None):
         try: from sentencepiece import SentencePieceTrainer,SentencePieceProcessor
         except ImportError:
@@ -467,12 +467,12 @@ class SPProcessor(PreProcessor):
 
     def process(self, ds):
         ds.items = _join_texts(ds.items, self.mark_fields, self.include_bos, self.include_eos)
-        ds.items = [apply_rules(t, pre_rules=self.pre_rules, post_rules=self.post_rules) 
+        ds.items = [apply_rules(t, pre_rules=self.pre_rules, post_rules=self.post_rules)
                     for t in progress_bar(ds.items, leave=False)]
         if self.sp_model is None or self.sp_vocab is None:
             cache_dir = self.train_func(ds.items, ds.path)
             self.sp_model,self.sp_vocab = cache_dir/'spm.model',cache_dir/'spm.vocab'
-        if not getattr(self, 'vocab', False): 
+        if not getattr(self, 'vocab', False):
             with open(self.sp_vocab, 'r') as f: self.vocab = Vocab([line.split('\t')[0] for line in f.readlines()])
         if self.n_cpus <= 1: ds.items = self._encode_batch(ds.items)
         else:
