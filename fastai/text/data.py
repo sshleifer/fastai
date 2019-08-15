@@ -125,7 +125,9 @@ class SortishSampler(Sampler):
         sort_idx = np.concatenate((ck_idx[0], sort_idx))
         return iter(sort_idx)
 
-def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwards:bool=False, max_len=256) -> Tuple[LongTensor, LongTensor]:
+
+DEFAULT_MAX_LEN = 256
+def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwards:bool=False, max_len=DEFAULT_MAX_LEN) -> Tuple[LongTensor, LongTensor]:
     "Function that collect samples and adds padding. Flips token order if needed"
     samples = to_data(samples)
     max_len = min(max([len(s[0]) for s in samples]), max_len)
@@ -258,12 +260,12 @@ class TextClasDataBunch(TextDataBunch):
     "Create a `TextDataBunch` suitable for training an RNN classifier."
     @classmethod
     def create(cls, train_ds, valid_ds, test_ds=None, path:PathOrStr='.', bs:int=32, val_bs:int=None, pad_idx=1,
-               pad_first=True, device:torch.device=None, no_check:bool=False, backwards:bool=False, 
+               pad_first=True, device:torch.device=None, no_check:bool=False, backwards:bool=False, max_len=DEFAULT_MAX_LEN,
                dl_tfms:Optional[Collection[Callable]]=None, **dl_kwargs) -> DataBunch:
         "Function that transform the `datasets` in a `DataBunch` for classification. Passes `**dl_kwargs` on to `DataLoader()`"
         datasets = cls._init_ds(train_ds, valid_ds, test_ds)
         val_bs = ifnone(val_bs, bs)
-        collate_fn = partial(pad_collate, pad_idx=pad_idx, pad_first=pad_first, backwards=backwards)
+        collate_fn = partial(pad_collate, pad_idx=pad_idx, pad_first=pad_first, backwards=backwards, max_len=max_len)
         train_sampler = SortishSampler(datasets[0].x, key=lambda t: len(datasets[0][t][0].data), bs=bs)
         train_dl = DataLoader(datasets[0], batch_size=bs, sampler=train_sampler, drop_last=True, **dl_kwargs)
         dataloaders = [train_dl]

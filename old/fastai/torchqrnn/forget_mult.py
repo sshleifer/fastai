@@ -165,7 +165,7 @@ class ForgetMult(torch.nn.Module):
         - X (seq_len, batch, input_size): tensor containing the features of the input sequence.
         - F (seq_len, batch, input_size): tensor containing the forget gate values, assumed in range [0, 1].
         - hidden_init (batch, input_size): tensor containing the initial hidden state for the recurrence (h_{t-1}).
-        - use_cuda: If True, use the fast element-wise CUDA kernel for recurrence. If False, uses naive for loop. Default: True.
+        - USE_CUDA: If True, use the fast element-wise CUDA kernel for recurrence. If False, uses naive for loop. Default: True.
     """
 
     def __init__(self):

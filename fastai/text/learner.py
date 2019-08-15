@@ -69,14 +69,14 @@ class RNNLearner(Learner):
         encoder.load_state_dict(torch.load(self.path/self.model_dir/f'{name}.pth', map_location=device))
         self.freeze()
 
-    def load_pretrained(self, wgts_fname:str, itos_fname:str, strict:bool=True):
+    def load_pretrained(learn, wgts_fname:str, itos_fname:str, strict:bool=True):
         "Load a pretrained model and adapts it to the data vocabulary."
         old_itos = pickle.load(open(itos_fname, 'rb'))
         old_stoi = {v:k for k,v in enumerate(old_itos)}
         wgts = torch.load(wgts_fname, map_location=lambda storage, loc: storage)
         if 'model' in wgts: wgts = wgts['model']
-        wgts = convert_weights(wgts, old_stoi, self.data.train_ds.vocab.itos)
-        self.model.load_state_dict(wgts, strict=strict)
+        wgts = convert_weights(wgts, old_stoi, learn.data.train_ds.vocab.itos)
+        learn.model.load_state_dict(wgts, strict=strict)
 
     def get_preds(self, ds_type:DatasetType=DatasetType.Valid, activ:nn.Module=None, with_loss:bool=False, n_batch:Optional[int]=None,
                   pbar:Optional[PBar]=None, ordered:bool=False) -> List[Tensor]:
