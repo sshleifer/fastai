@@ -27,8 +27,8 @@ _model_meta = {AWD_LSTM: {'hid_name':'emb_sz', 'url':URLs.WT103_FWD, 'url_bwd':U
 
 def convert_weights(wgts:Weights, stoi_wgts:Dict[str,int], itos_new:Collection[str]) -> Weights:
     "Convert the model `wgts` to go with a new vocabulary."
-    import pdb; pdb.set_trace()
-    dec_bias, enc_wgts = wgts.get('1.decoder.bias', None), wgts['0.module.encoder.weight']
+    module_str = '0.module.' if '0.module.encoder.weight' in wgts.keys() else '0.'
+    dec_bias, enc_wgts = wgts.get('1.decoder.bias', None), wgts[f'{module_str}encoder.weight']
     wgts_m = enc_wgts.mean(0)
     if dec_bias is not None: bias_m = dec_bias.mean(0)
     new_w = enc_wgts.new_zeros((len(itos_new),enc_wgts.size(1))).zero_()
@@ -37,8 +37,8 @@ def convert_weights(wgts:Weights, stoi_wgts:Dict[str,int], itos_new:Collection[s
         r = stoi_wgts[w] if w in stoi_wgts else -1
         new_w[i] = enc_wgts[r] if r>=0 else wgts_m
         if dec_bias is not None: new_b[i] = dec_bias[r] if r>=0 else bias_m
-    wgts['0.module.encoder.weight'] = new_w
-    if '0.module.encoder_dp.emb.weight' in wgts: wgts['0.module.encoder_dp.emb.weight'] = new_w.clone()
+    wgts[f'{module_str}encoder.weight'] = new_w
+    if f'{module_str}encoder_dp.emb.weight' in wgts: wgts[f'{module_str}encoder_dp.emb.weight'] = new_w.clone()
     wgts['1.decoder.weight'] = new_w.clone()
     if dec_bias is not None: wgts['1.decoder.bias'] = new_b
     return wgts
@@ -285,6 +285,7 @@ def get_text_classifier(arch:Callable, vocab_sz:int, n_class:int, bptt:int=70, m
     model = SequentialRNN(encoder, PoolingLinearClassifier(layers, ps))
     return model if init is None else model.apply(init)
 
+
 def text_classifier_learner(data:DataBunch, arch:Callable, bptt:int=70, max_len:int=70*20, config:dict=None,
                             pretrained:bool=True, drop_mult:float=1., lin_ftrs:Collection[int]=None,
                             ps:Collection[float]=None, **learn_kwargs) -> 'TextClassifierLearner':
@@ -302,3 +303,7 @@ def text_classifier_learner(data:DataBunch, arch:Callable, bptt:int=70, max_len:
         learn.load_pretrained(*fnames, strict=False)
         learn.freeze()
     return learn
+
+
+def evaluate_lm():
+    pass
