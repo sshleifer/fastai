@@ -239,6 +239,9 @@ class FlattenedLoss():
 def CrossEntropyFlat(*args, axis:int=-1, **kwargs):
     "Same as `nn.CrossEntropyLoss`, but flattens input and target."
     return FlattenedLoss(nn.CrossEntropyLoss, *args, axis=axis, **kwargs)
+def LabelSmoothingCrossEntropyFlat(*args, axis:int=-1, **kwargs):
+    return FlattenedLoss(LabelSmoothingCrossEntropy, *args, axis=axis, **kwargs)
+
 
 def BCEWithLogitsFlat(*args, axis:int=-1, floatify:bool=True, **kwargs):
     "Same as `nn.BCEWithLogitsLoss`, but flattens input and target."
