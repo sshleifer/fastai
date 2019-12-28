@@ -5,12 +5,17 @@ import spacy
 from spacy.symbols import ORTH
 
 __all__ = ['BaseTokenizer', 'SpacyTokenizer', 'Tokenizer', 'Vocab', 'fix_html', 'replace_all_caps', 'replace_rep', 'replace_wrep',
+<<<<<<< HEAD
            'rm_useless_spaces', 'spec_add_spaces', 'BOS', 'FLD', 'UNK', 'PAD', 'TK_MAJ', 'TK_UP', 'TK_REP', 'TK_REP', 'TK_WREP',
            'deal_caps', 'back_translate']
+=======
+           'rm_useless_spaces', 'spec_add_spaces', 'BOS', 'EOS', 'FLD', 'UNK', 'PAD', 'TK_MAJ', 'TK_UP', 'TK_REP', 'TK_REP', 'TK_WREP',
+           'deal_caps']
+>>>>>>> upstream/master
 
-BOS,FLD,UNK,PAD = 'xxbos','xxfld','xxunk','xxpad'
+BOS,EOS,FLD,UNK,PAD = 'xxbos','xxeos','xxfld','xxunk','xxpad'
 TK_MAJ,TK_UP,TK_REP,TK_WREP = 'xxmaj','xxup','xxrep','xxwrep'
-defaults.text_spec_tok = [UNK,PAD,BOS,FLD,TK_MAJ,TK_UP,TK_REP,TK_WREP]
+defaults.text_spec_tok = [UNK,PAD,BOS,EOS,FLD,TK_MAJ,TK_UP,TK_REP,TK_WREP]
 
 
 
@@ -23,7 +28,7 @@ class BaseTokenizer():
 class SpacyTokenizer(BaseTokenizer):
     "Wrapper around a spacy tokenizer to make it a `BaseTokenizer`."
     def __init__(self, lang:str):
-        self.tok = spacy.blank(lang)
+        self.tok = spacy.blank(lang, disable=["parser","tagger","ner"])
 
     def tokenizer(self, t:str) -> List[str]:
         return [t.text for t in self.tok.tokenizer(t)]
@@ -66,15 +71,15 @@ def fix_html(x:str) -> str:
     return re1.sub(' ', html.unescape(x))
 
 def replace_all_caps(x:Collection[str]) -> Collection[str]:
-    "Add `TK_UP` for words in all caps in `x`."
+    "Replace tokens in ALL CAPS in `x` by their lower version and add `TK_UP` before."
     res = []
     for t in x:
-        if t.isupper() and len(t) > 1: res.append(TK_UP)
-        res.append(t)
+        if t.isupper() and len(t) > 1: res.append(TK_UP); res.append(t.lower())
+        else: res.append(t)
     return res
 
 def deal_caps(x:Collection[str]) -> Collection[str]:
-    "Replace all words in `x` by their lower version and add `TK_MAJ`."
+    "Replace all Capitalized tokens in `x` by their lower version and add `TK_MAJ` before."
     res = []
     for t in x:
         if t == '': continue
@@ -92,7 +97,7 @@ class Tokenizer():
         self.tok_func,self.lang,self.special_cases = tok_func,lang,special_cases
         self.pre_rules  = ifnone(pre_rules,  defaults.text_pre_rules )
         self.post_rules = ifnone(post_rules, defaults.text_post_rules)
-        self.special_cases = special_cases if special_cases else defaults.text_spec_tok
+        self.special_cases = special_cases if special_cases is not None else defaults.text_spec_tok
         self.n_cpus = ifnone(n_cpus, defaults.cpus)
 
     def __repr__(self) -> str:
@@ -143,6 +148,7 @@ class Vocab():
 
     def save(self, path):
         "Save `self.itos` in `path`"
+        if rank_distrib(): return # don't save if slave proc
         pickle.dump(self.itos, open(path, 'wb'))
 
     @classmethod
@@ -153,6 +159,9 @@ class Vocab():
         for o in reversed(defaults.text_spec_tok):
             if o in itos: itos.remove(o)
             itos.insert(0, o)
+        itos = itos[:max_vocab]
+        if len(itos) < max_vocab: #Make sure vocab size is a multiple of 8 for fast mixed precision training
+            while len(itos)%8 !=0: itos.append('xxfake')
         return cls(itos)
     
     @classmethod

@@ -76,8 +76,14 @@ entries:
           title: Tracking
           url: /callbacks.tracker.html
         - output: web,pdf
+          title: Tensorboard
+          url: /callbacks.tensorboard.html
+        - output: web,pdf
           title: Memory Profiling
           url: /callbacks.mem.html
+        - output: web,pdf
+          title: Miscellaneous
+          url: /callbacks.misc.html
         title: callbacks
     output: web
     title: Training
@@ -94,6 +100,9 @@ entries:
         - output: web,pdf
           title: vision.learner
           url: /vision.learner.html
+        - output: web,pdf
+          title: vision.interpret
+          url: /vision.interpret.html
         - output: web,pdf
           title: vision.transform
           url: /vision.transform.html
@@ -112,9 +121,6 @@ entries:
         - output: web,pdf
           title: vision.models.unet
           url: /vision.models.unet.html
-        - output: web,pdf
-          title: widgets.image_cleaner
-          url: /widgets.image_cleaner.html
         title: vision
       - output: web
         subfolderitems:
@@ -124,6 +130,9 @@ entries:
         - output: web,pdf
           title: text.learner
           url: /text.learner.html
+        - output: web,pdf
+          title: text.interpret
+          url: /text.interpret.html
         - output: web,pdf
           title: text.transform
           url: /text.transform.html
@@ -148,7 +157,19 @@ entries:
         - output: web,pdf
           title: tabular.models
           url: /tabular.models.html
+        - output: web,pdf
+          title: tabular.learner
+          url: /tabular.learner.html
         title: tabular
+      - output: web
+        subfolderitems:
+        - output: web,pdf
+          title: widgets.class_confusion
+          url: /widgets.class_confusion.html
+        - output: web,pdf
+          title: widgets.image_cleaner
+          url: /widgets.image_cleaner.html
+        title: widgets
     - output: web,pdf
       title: collab
       url: /collab.html
@@ -176,6 +197,9 @@ entries:
     - output: web,pdf
       title: torch_core
       url: /torch_core.html
+    - output: web,pdf
+      title: imports
+      url: /imports.html
     output: web
     title: Core
   - folderitems:
@@ -185,6 +209,12 @@ entries:
     - output: web,pdf
       title: Memory Management
       url: /utils.mem.html
+    - output: web,pdf
+      title: ipython helpers
+      url: /utils.ipython.html
+    - output: web,pdf
+      title: Display utils
+      url: /utils.mod_display.html
     output: web
     title: Utils
   - folderitems:
@@ -203,6 +233,9 @@ entries:
     - output: web,pdf
       title: DL on a Shoestring
       url: /tutorial.resources.html
+    - output: web,pdf
+      title: Distributed training
+      url: /distributed.html
     output: web
     title: Tutorials
   - folderitems:

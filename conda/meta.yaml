@@ -51,7 +51,7 @@ requirements:
   run:
     - dataclasses
     - beautifulsoup4
-    - fastprogress >=0.1.19
+    - fastprogress >=0.2.1
     - matplotlib
     - numpy >=1.15
     - pandas
@@ -63,7 +63,6 @@ requirements:
     - requests
     - scipy
     - spacy >=2.0.18
-    - typing
     - pyyaml
     - pytorch >=1.0.0
     - torchvision

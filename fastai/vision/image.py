@@ -187,6 +187,7 @@ class Image(ItemBase):
         "Resize the image to `size`, size can be a single int."
         assert self._flow is None
         if isinstance(size, int): size=(self.shape[0], size, size)
+        if tuple(size)==tuple(self.shape): return self
         self.flow = _affine_grid(size)
         return self
 
@@ -237,9 +238,14 @@ class ImageSegment(Image):
         cmap:str='tab20', alpha:float=0.5, **kwargs):
         "Show the `ImageSegment` on `ax`."
         ax = show_image(self, ax=ax, hide_axis=hide_axis, cmap=cmap, figsize=figsize,
-                        interpolation='nearest', alpha=alpha, vmin=0)
+                        interpolation='nearest', alpha=alpha, vmin=0, **kwargs)
         if title: ax.set_title(title)
-            
+
+    def save(self, fn:PathOrStr):
+        "Save the image segment to `fn`."
+        x = image2np(self.data).astype(np.uint8)
+        PIL.Image.fromarray(x).save(fn)
+
     def reconstruct(self, t:Tensor): return ImageSegment(t)
 
 class ImagePoints(Image):
@@ -269,7 +275,7 @@ class ImagePoints(Image):
 
     def __repr__(self): return f'{self.__class__.__name__} {tuple(self.size)}'
     def _repr_image_format(self, format_str): return None
-    
+
     @property
     def flow(self)->FlowField:
         "Access the flow-field grid after applying queued affine and coord transforms."
@@ -384,18 +390,20 @@ class ImageBBox(ImagePoints):
             else: text=None
             _draw_rect(ax, bb2hw(bbox), text=text, color=color)
 
-def open_image(fn:PathOrStr, div:bool=True, convert_mode:str='RGB', cls:type=Image)->Image:
+def open_image(fn:PathOrStr, div:bool=True, convert_mode:str='RGB', cls:type=Image,
+        after_open:Callable=None)->Image:
     "Return `Image` object created from image in file `fn`."
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning) # EXIF warning from TiffPlugin
         x = PIL.Image.open(fn).convert(convert_mode)
+    if after_open: x = after_open(x)
     x = pil2tensor(x,np.float32)
     if div: x.div_(255)
     return cls(x)
 
-def open_mask(fn:PathOrStr, div=False, convert_mode='L')->ImageSegment:
+def open_mask(fn:PathOrStr, div=False, convert_mode='L', after_open:Callable=None)->ImageSegment:
     "Return `ImageSegment` object create from mask in file `fn`. If `div`, divides pixel values by 255."
-    return open_image(fn, div=div, convert_mode=convert_mode, cls=ImageSegment)
+    return open_image(fn, div=div, convert_mode=convert_mode, cls=ImageSegment, after_open=after_open)
 
 def open_mask_rle(mask_rle:str, shape:Tuple[int, int])->ImageSegment:
     "Return `ImageSegment` object create from run-length encoded string in `mask_lre` with size in `shape`."
@@ -424,7 +432,8 @@ def show_image(img:Image, ax:plt.Axes=None, figsize:tuple=(3,3), hide_axis:bool=
                 alpha:float=None, **kwargs)->plt.Axes:
     "Display `Image` in notebook."
     if ax is None: fig,ax = plt.subplots(figsize=figsize)
-    ax.imshow(image2np(img.data), cmap=cmap, alpha=alpha, **kwargs)
+    xtr = dict(cmap=cmap, alpha=alpha, **kwargs)
+    ax.imshow(image2np(img.data), **xtr) if (hasattr(img, 'data')) else ax.imshow(img, **xtr)
     if hide_axis: ax.axis('off')
     return ax
 
@@ -456,10 +465,10 @@ class Transform():
         setattr(Image, func.__name__,
                 lambda x, *args, **kwargs: self.calc(x, *args, **kwargs))
 
-    def __call__(self, *args:Any, p:float=1., is_random:bool=True, **kwargs:Any)->Image:
+    def __call__(self, *args:Any, p:float=1., is_random:bool=True, use_on_y:bool=True, **kwargs:Any)->Image:
         "Calc now if `args` passed; else create a transform called prob `p` if `random`."
         if args: return self.calc(*args, **kwargs)
-        else: return RandTransform(self, kwargs=kwargs, is_random=is_random, p=p)
+        else: return RandTransform(self, kwargs=kwargs, is_random=is_random, use_on_y=use_on_y, p=p)
 
     def calc(self, x:Image, *args:Any, **kwargs:Any)->Image:
         "Apply to image `x`, wrapping it if necessary."
@@ -480,6 +489,7 @@ class RandTransform():
     resolved:dict = field(default_factory=dict)
     do_run:bool = True
     is_random:bool = True
+    use_on_y:bool = True
     def __post_init__(self): functools.update_wrapper(self, self.tfm)
 
     def resolve(self)->None:
@@ -528,15 +538,18 @@ def _grid_sample(x:TensorImage, coords:FlowField, mode:str='bilinear', padding_m
         d = min(x.shape[1]/coords.shape[1], x.shape[2]/coords.shape[2])/2
         # If we're resizing up by >200%, and we're zooming less than that, interpolate first
         if d>1 and d>z: x = F.interpolate(x[None], scale_factor=1/d, mode='area')[0]
-    return F.grid_sample(x[None], coords, mode=mode, padding_mode=padding_mode)[0]
+    with warnings.catch_warnings():
+        #To avoid the warning that come from grid_sample.
+        warnings.simplefilter("ignore")
+        return F.grid_sample(x[None], coords, mode=mode, padding_mode=padding_mode)[0]
 
 def _affine_grid(size:TensorImageSize)->FlowField:
     size = ((1,)+size)
     N, C, H, W = size
     grid = FloatTensor(N, H, W, 2)
-    linear_points = torch.linspace(-1, 1, W) if W > 1 else tensor([-1])
+    linear_points = torch.linspace(-1, 1, W) if W > 1 else tensor([-1.])
     grid[:, :, :, 0] = torch.ger(torch.ones(H), linear_points).expand_as(grid[:, :, :, 0])
-    linear_points = torch.linspace(-1, 1, H) if H > 1 else tensor([-1])
+    linear_points = torch.linspace(-1, 1, H) if H > 1 else tensor([-1.])
     grid[:, :, :, 1] = torch.ger(linear_points, torch.ones(W)).expand_as(grid[:, :, :, 1])
     return FlowField(size[2:], grid)
 

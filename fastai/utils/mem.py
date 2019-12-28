@@ -3,13 +3,11 @@
 from ..imports.torch import *
 from ..core import *
 from ..script import *
-from ..utils.env import *
-import functools, traceback, threading, time
+import functools, threading, time
 from .pynvml_gate import *
 from collections import namedtuple
 
-IS_IN_IPYTHON = is_in_ipython()
-is_osx = platform.system() == "Darwin"
+#is_osx = platform.system() == "Darwin"
 use_gpu = torch.cuda.is_available()
 
 GPUMemory = namedtuple('GPUMemory', ['total', 'free', 'used'])
@@ -71,50 +69,13 @@ def gpu_with_max_free_mem():
     id = np.argmax(free_all)
     return id, free_all[id]
 
-def get_ref_free_exc_info():
-    "Free traceback from references to locals() in each frame to avoid circular reference leading to gc.collect() unable to reclaim memory"
-    type, val, tb = sys.exc_info()
-    traceback.clear_frames(tb)
-    return (type, val, tb)
-
-def gpu_mem_restore(func):
-    "Reclaim GPU RAM if CUDA out of memory happened, or execution was interrupted"
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        tb_clear_frames = os.environ.get('FASTAI_TB_CLEAR_FRAMES', None)
-        if not IS_IN_IPYTHON or tb_clear_frames=="0":
-            return func(*args, **kwargs)
-
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            if ("CUDA out of memory" in str(e) or
-                "device-side assert triggered" in str(e) or
-                tb_clear_frames == "1"):
-                type, val, tb = get_ref_free_exc_info() # must!
-                gc.collect()
-                if "device-side assert triggered" in str(e):
-                    warn("""When 'device-side assert triggered' error happens, it's not possible to recover and you must restart the kernel to continue. Use os.environ['CUDA_LAUNCH_BLOCKING']="1" before restarting to debug""")
-                raise type(val).with_traceback(tb) from None
-            else: raise # re-raises the exact last exception
-    return wrapper
-
-class gpu_mem_restore_ctx():
-    "context manager to reclaim RAM if an exception happened under ipython"
-    def __enter__(self): return self
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if not exc_val: return True
-        traceback.clear_frames(exc_tb)
-        gc.collect()
-        raise exc_type(exc_val).with_traceback(exc_tb) from None
-
 class GPUMemTrace():
     "Trace allocated and peaked GPU memory usage (deltas)."
-    def __init__(self, silent=False, ctx=None, on_exit_report=False):
+    def __init__(self, silent=False, ctx=None, on_exit_report=True):
         assert torch.cuda.is_available(), "pytorch CUDA is required"
         self.silent = silent # shortcut to turn off all reports from constructor
         self.ctx    = ctx    # default context note in report
-        self.on_exit_report = on_exit_report # auto-report on ctx manager exit
+        self.on_exit_report = on_exit_report # auto-report on ctx manager exit (default: True)
         self.start()
 
     def reset(self):
@@ -124,13 +85,17 @@ class GPUMemTrace():
     def data_set(self):
         # delta_used is the difference between current used mem and used mem at the start
         self.delta_used = gpu_mem_get_used_no_cache() - self.used_start
-        # delta_peaked is the overhead if any.
-        # 1. The base measurement is the difference between the peak memory and
-        # the used mem at the start.
-        # 2. Then if delta_used is positive it gets subtracted from the base value.
-        # This indicates the size of the blip.
+
+        # delta_peaked is the overhead if any. It is calculated as follows:
+        #
+        # 1. The difference between the peak memory and the used memory at the
+        # start is measured:
+        # 2a. If it's negative, then delta_peaked is 0
+        # 2b. Otherwise, if used_delta is positive it gets subtracted from delta_peaked
+        # XXX: 2a shouldn't be needed once we have a reliable peak counter
         self.delta_peaked = self.used_peak - self.used_start
-        if self.delta_used > 0: self.delta_peaked -= self.delta_used
+        if self.delta_peaked < 0: self.delta_peaked = 0
+        elif self.delta_used > 0: self.delta_peaked -= self.delta_used
 
     def data(self):
         if self.is_running: self.data_set()
@@ -159,7 +124,7 @@ class GPUMemTrace():
 
     def __repr__(self):
         delta_used, delta_peaked = self.data()
-        return f"△used: {delta_used}MB, △peaked: {delta_peaked}MB"
+        return f"△Used Peaked MB: {delta_used:6,.0f} {delta_peaked:6,.0f}"
 
     def _get_ctx(self, subctx=None):
         "Return ' (ctx: subctx)' or ' (ctx)' or ' (subctx)' or '' depending on this and constructor arguments"
@@ -174,7 +139,7 @@ class GPUMemTrace():
     def report(self, subctx=None):
         "Print delta used+peaked, and an optional context note, which can also be preset in constructor"
         if self.silent: return
-        print(f"{ self }{ self._get_ctx(subctx) }")
+        print(f"{ self.__repr__() }{ self._get_ctx(subctx) }")
 
     def report_n_reset(self, subctx=None):
         "Print delta used+peaked, and an optional context note. Then reset counters"
@@ -192,9 +157,62 @@ class GPUMemTrace():
     def peak_monitor_stop(self):
         self.peak_monitoring = False
 
+    # XXX: this is an unreliable function, since there is no thread priority
+    # control and it may not run enough or not run at all
     def peak_monitor_func(self):
         gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(torch.cuda.current_device())
         while True:
             self.used_peak = max(gpu_mem_get_used_fast(gpu_handle), self.used_peak)
             if not self.peak_monitoring: break
             time.sleep(0.001) # 1msec
+
+def gpu_mem_trace(func):
+    "A decorator that runs `GPUMemTrace` w/ report on func"
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with GPUMemTrace(ctx=func.__qualname__, on_exit_report=True):
+            return func(*args, **kwargs)
+    return wrapper
+
+def reduce_mem_usage(df):
+    """ iterate through all the columns of a dataframe and modify the data type
+        to reduce memory usage.
+    """
+    start_mem = df.memory_usage().sum() / 1024**2
+    print('Memory usage of dataframe is {:.2f} MB'.format(start_mem))
+
+    #Removed from debugging
+    columns = df.columns
+    #.drop('index')
+
+    for col in columns:
+        col_type = df[col].dtype
+        if str(col_type) != 'category' and col_type != 'datetime64[ns]' and col_type != bool:
+            if col_type != object:
+                c_min = df[col].min()
+                c_max = df[col].max()
+                if str(col_type)[:3] == 'int':
+                    if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
+                        df[col] = df[col].astype(np.int8)
+                    elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                        df[col] = df[col].astype(np.int16)
+                    elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                        df[col] = df[col].astype(np.int32)
+                    elif c_min > np.iinfo(np.int64).min and c_max < np.iinfo(np.int64).max:
+                        df[col] = df[col].astype(np.int64)
+                else:
+                    #if c_min > np.finfo(np.float16).min and c_max < np.finfo(np.float16).max:
+                        #df[col] = df[col].astype(np.float16)
+                    #Sometimes causes and error and had to remove
+                    if c_min > np.finfo(np.float32).min and c_max < np.finfo(np.float32).max:
+                        df[col] = df[col].astype(np.float32)
+                    else:
+                        print('Error '+col+' Value would be a float64. Disregarding.')
+            else:
+                df[col] = df[col].astype('category')
+
+    end_mem = df.memory_usage().sum() / 1024**2
+    print('Memory usage after optimization is: {:.2f} MB'.format(end_mem))
+    print('Decreased by {:.1f}%'.format(100 * (start_mem - end_mem) / start_mem))
+
+    return df

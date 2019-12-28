@@ -72,14 +72,6 @@ def test_gpu_mem_measure_consumed_reclaimed():
     # allow 2mb tolerance for rounding of 1 mb on each side
     assert isclose(used_before, used_after_reclaimed, abs_tol=2), f"reclaim all consumed memory, started with {used_before}, now {used_after_reclaimed} used"
 
-def parse_mtrace_repr(mtrace_repr, ctx):
-    "parse the `mtrace` repr and return `used`, `peaked` ints"
-    # extract numbers + check ctx matches
-    match = re.findall(fr'△used: (\d+)MB, △peaked: (\d+)MB \({ctx}\)', mtrace_repr)
-    assert match, f"input: cs.out={mtrace_repr}, ctx={ctx}"
-    used, peaked = map(int, match[0])
-    return used, peaked
-
 @pytest.mark.cuda
 def test_gpu_mem_trace():
 
@@ -144,8 +136,11 @@ def test_gpu_mem_trace():
 @pytest.mark.cuda
 def test_gpu_mem_trace_ctx():
     # context manager
-    # expecting used=20, peaked=0
-    with GPUMemTrace() as mtrace: x1 = gpu_mem_allocate_mbs(20)
+    # expecting used=20, peaked=0, auto-printout
+    with CaptureStdout() as cs:
+        with GPUMemTrace() as mtrace:
+            x1 = gpu_mem_allocate_mbs(20)
+    _, _ = parse_mtrace_repr(cs.out, "exit")
     this_tests(mtrace.__class__)
     check_mtrace(used_exp=20, peaked_exp=0, mtrace=mtrace, abs_tol=2, ctx="ctx manager")
     del x1
@@ -153,7 +148,7 @@ def test_gpu_mem_trace_ctx():
     # auto-report on exit w/ context and w/o
     for ctx in [None, "test"]:
         with CaptureStdout() as cs:
-            with GPUMemTrace(ctx=ctx, on_exit_report=True):
+            with GPUMemTrace(ctx=ctx):
                 # expecting used=20, peaked=0
                 x1 = gpu_mem_allocate_mbs(20)
         if ctx is None: ctx = "exit" # exit is the hardcoded subctx for ctx manager
@@ -162,3 +157,79 @@ def test_gpu_mem_trace_ctx():
         check_mem(used_exp=20,   peaked_exp=0,
                   used_rcv=used, peaked_rcv=peaked, abs_tol=2, ctx="auto-report on exit")
         del x1
+
+    # auto-report off
+    ctx = "auto-report off"
+    with CaptureStdout() as cs:
+        with GPUMemTrace(ctx=ctx, on_exit_report=False): 1
+    assert len(cs.out) == 0, f"stdout: {cs.out}"
+
+
+# setup for test_gpu_mem_trace_decorator
+@gpu_mem_trace
+def experiment1(): pass
+
+class NewTestExp():
+    @staticmethod
+    @gpu_mem_trace
+    def experiment2(): pass
+
+@pytest.mark.cuda
+def test_gpu_mem_trace_decorator():
+    this_tests(gpu_mem_trace)
+
+    # func
+    with CaptureStdout() as cs: experiment1()
+    used, peaked = parse_mtrace_repr(cs.out, "experiment1: exit")
+    check_mem(used_exp=0,    peaked_exp=0,
+              used_rcv=used, peaked_rcv=peaked, abs_tol=2, ctx="")
+
+    # class func
+    with CaptureStdout() as cs: NewTestExp.experiment2()
+    used, peaked = parse_mtrace_repr(cs.out, "NewTestExp.experiment2: exit")
+    check_mem(used_exp=0,    peaked_exp=0,
+              used_rcv=used, peaked_rcv=peaked, abs_tol=2, ctx="")
+
+
+def reduce_mem_usage(df):
+    """ iterate through all the columns of a dataframe and modify the data type
+        to reduce memory usage.
+    """
+    start_mem = df.memory_usage().sum() / 1024**2
+    print('Memory usage of dataframe is {:.2f} MB'.format(start_mem))
+
+    #Removed from debugging
+    columns = df.columns
+    #.drop('index')
+
+    for col in columns:
+        col_type = df[col].dtype
+        if str(col_type) != 'category' and col_type != 'datetime64[ns]' and col_type != bool:
+            if col_type != object:
+                c_min = df[col].min()
+                c_max = df[col].max()
+                if str(col_type)[:3] == 'int':
+                    if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
+                        df[col] = df[col].astype(np.int8)
+                    elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                        df[col] = df[col].astype(np.int16)
+                    elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                        df[col] = df[col].astype(np.int32)
+                    elif c_min > np.iinfo(np.int64).min and c_max < np.iinfo(np.int64).max:
+                        df[col] = df[col].astype(np.int64)
+                else:
+                    #if c_min > np.finfo(np.float16).min and c_max < np.finfo(np.float16).max:
+                        #df[col] = df[col].astype(np.float16)
+                    #Sometimes causes and error and had to remove
+                    if c_min > np.finfo(np.float32).min and c_max < np.finfo(np.float32).max:
+                        df[col] = df[col].astype(np.float32)
+                    else:
+                        print('Error '+col+' value would be a float64. Disregarding.')
+            else:
+                df[col] = df[col].astype('category')
+
+    end_mem = df.memory_usage().sum() / 1024**2
+    print('Memory usage after optimization is: {:.2f} MB'.format(end_mem))
+    print('Decreased by {:.1f}%'.format(100 * (start_mem - end_mem) / start_mem))
+
+    return df

@@ -3,11 +3,9 @@ from ..torch_core import *
 from .transform import *
 from ..basic_data import *
 from ..data_block import *
-from ..basic_train import *
-from .models import *
 from pandas.api.types import is_numeric_dtype, is_categorical_dtype
 
-__all__ = ['TabularDataBunch', 'TabularLine', 'TabularList', 'TabularProcessor', 'tabular_learner']
+__all__ = ['TabularDataBunch', 'TabularLine', 'TabularList', 'TabularProcessor']
 
 OptTabTfms = Optional[Collection[TabularProc]]
 
@@ -15,7 +13,7 @@ OptTabTfms = Optional[Collection[TabularProc]]
 def emb_sz_rule(n_cat:int)->int: return min(600, round(1.6 * n_cat**0.56))
 
 def def_emb_sz(classes, n, sz_dict=None):
-    "Pick an embedding size for `n` dependinf on `classes` if not given in `sz_dict`."
+    "Pick an embedding size for `n` depending on `classes` if not given in `sz_dict`."
     sz_dict = ifnone(sz_dict, {})
     n_cat = len(classes[n])
     sz = sz_dict.get(n, int(emb_sz_rule(n_cat)))  # rule of thumb
@@ -57,6 +55,7 @@ class TabularProcessor(PreProcessor):
     def process(self, ds):
         if ds.inner_df is None:
             ds.classes,ds.cat_names,ds.cont_names = self.classes,self.cat_names,self.cont_names
+            ds.col_names = self.cat_names + self.cont_names
             ds.preprocessed = True
             return
         for i,proc in enumerate(self.procs):
@@ -166,12 +165,3 @@ class TabularList(ItemList):
         df = pd.DataFrame({n:items[:,i] for i,n in enumerate(names)}, columns=names)
         with pd.option_context('display.max_colwidth', -1):
             display(HTML(df.to_html(index=False)))
-
-def tabular_learner(data:DataBunch, layers:Collection[int], emb_szs:Dict[str,int]=None, metrics=None,
-        ps:Collection[float]=None, emb_drop:float=0., y_range:OptRange=None, use_bn:bool=True, **learn_kwargs):
-    "Get a `Learner` using `data`, with `metrics`, including a `TabularModel` created using the remaining params."
-    emb_szs = data.get_emb_szs(ifnone(emb_szs, {}))
-    model = TabularModel(emb_szs, len(data.cont_names), out_sz=data.c, layers=layers, ps=ps, emb_drop=emb_drop,
-                         y_range=y_range, use_bn=use_bn)
-    return Learner(data, model, metrics=metrics, **learn_kwargs)
-

@@ -6,11 +6,12 @@ Most recent releases are shown at the top. Each release shows:
 - **Changed**: Additional parameters, changes to inputs or outputs, etc
 - **Fixed**: Bug fixes that don't change documented behaviour
 
-Note that the top-most release is changes in the unreleased master branch on
+Note that the top-most release changes in the unreleased master branch on
 Github. Parentheses after an item show the name or github id of the contributor
 of that change.
 
-## 1.0.47.dev0 (Work In Progress)
+
+## 1.0.61.dev0 (Work In Progress)
 
 ### New:
 
@@ -20,22 +21,232 @@ of that change.
 
 
 
+## 1.0.60 (2019-12-28)
+
+### New:
+
+### Changed:
+
+### Fixed:
+
+
+
+## 1.0.59 (2019-10-26)
+
+### New:
+
+### Changed:
+
+### Fixed:
+
+`Learner.get_preds` and `Learner.TTA` now work in FP16
+
+
+## 1.0.58 (2019-09-29)
+
+### New:
+
+### Changed:
+
+- `MultiLabelFbeta` isn't a `LearnerCallback` anymore and can be passed as a metric.
+
+### Fixed:
+
+- `typing` removed as a dep since it's done nothing since py34 and we require py35+.
+
+## 1.0.57 (2019-08-09)
+
+### New:
+
+### Changed:
+
+### Fixed:
+
+
+
+## 1.0.56 (2019-08-06)
+
+### New:
+
+- QRNNs now work in mixed precision and can be twice as fast on a modern GPU (if all dims are multiples of 8)
+
+### Changed:
+
+### Fixed:
+
+
+
+## 1.0.55 (2019-07-11)
+
+### New:
+
+### Changed:
+
+### Fixed:
+
+
+
+## 1.0.54 (2019-06-19)
+
+### New:
+
+- `torch_core.Module` is a replacement for `nn.Module` that doesn't require calling `super().__init__`
+- `torch_core.Module` is implemented using new metaclass `PrePostInit` which will call
+  optional `__pre_init__` and `__post_init__` methods
+
+## 1.0.53 (2019-06-10)
+
+### Breaking changes:
+
+- In the AWD-LSTM default config, the default embedding size is now 1152, for
+  faster fp16 training. New pretrained models have been released accordingly,
+  the old pretrained model (with embedding size of 1150) is still available at 
+  https://s3.amazonaws.com/fast-ai-modelzoo/wt103-1.tgz
+
+### New:
+
+- sentencepiece tokenizer in fastai.text via `SPProcessor`
+- a backward pretrained model for NLP (automatically used if the databunch was
+  created via the datablock API using `backwards=True`)
+- `bunzip(fn:PathOrStr)`: bunzip a file
+- `working_directory`: context manager to change to a directory and return to original directory when done
+- `np_func`: decorator for creating metrics from numpy functions
+
+### Changed:
+
+- a `Vocab` is either exactly of size `max_vocab` or a size that is a multiple of 8. This coupled with the breaking
+change of embedding size 1152 (also a multiple of 8) allows a speed-up of 2 to 3 when training a language model
+in mixed precision.
+
+### Fixed:
+
+- `get_language_model`: `pretrained_fnames` no longer requires `pretrained` be `False`
+
+
+## 1.0.52 (2019-04-26)
+
+### New:
+
+- added `defaults.silent` that controls whether `fit` calls print out any output.
+
+### Changed:
+
+- added support for `defaults.extra_callback_fns`
+
+### Fixed:
+
+- `StopAfterNBatches` and `TerminateOnNaNCallback` fixed not to run validation
+
+
+## 1.0.51 (2019-04-01)
+
+### Breaking changes:
+
+- Loading and saving. Added option to save/load from streams (buffers or file pointers).
+**Note** In all save/load related functions (`Learn.save`, `Learn.export`, `load_learner`, `DataBunch.save`, `load_data`), the parameter name `fname` was renamed to `file`.
+
+### New:
+
+### Changed:
+
+### Fixed:
+
+- Default to using training set for `batch_stats` instead of validation
+- Bug in averaging the losses in Mixup
+
+
+## 1.0.50 (2019-03-19)
+
+### New:
+
+### Changed:
+
+### Fixed:
+
+
+
+## 1.0.49 (2019-03-15)
+
+### New:
+
+### Changed:
+
+- `MixedPrecisionCallback`: `dynamic` now defaults to True
+- `fit` now takes a `BasicLearner`
+
+### Fixed:
+
+- bug in `DataBunch.export` or `Learner.export` in object detection
+- `TextClassificationInterpretation` now works again (thanks to code from mikonapoli)
+- `create_cnn` hangs on Windows with PyTorch 1.0.1
+
+
+## 1.0.48 (2019-03-09)
+
+### Breaking changes:
+
+- `Learner.distributed` is now called `Learner.to_distributed`
+
+### New:
+
+- `Learner.to_parallel`: callback wraps in nn.DataParallel during train and unwraps at end
+- Initial work to provide a `GeneralOptimizer` that keeps track and update given `Statistic` then perform the step you want.
+
+### Fixed:
+
+- A few `Callback`s didn't have proper return
+
+
+## 1.0.47 (2019-03-06)
+
+### Breaking changes:
+
+- `create_cnn` becomes `cnn_learner`
+- `random_split_by_pct` becomes `split_by_rand_pct`
+- `no_split` becomes `split_none`
+
+### New:
+
+- `tensorboard` callback to use Tensorboard (requires installing tensorboardx)
+- `LabelLists.pre_transform`: call transforms on PIL.Image, before converting to float tensor
+- `LabelLists.presize`: standard Imagenet image resizing/cropping using `pre_transform`
+- `compose`: compose a list of functions
+- Added functional `[test]` links to docs.fast.ai
+- `TrackEpochCallback`: Store completed epoch number in `learn.model_dir/name`
+- `rank_distrib`: get rank of distributed process
+
+### Changed:
+
+- Change `flip_lr` to use much faster method
+- In `text_classifier_learner` the outputs of the encoder corresponding to pad indices are ignored in the poolings
+- Default number of OpenMP threads to 2 (previously 4), due to observed performance benefits
+- `purge` now relies on a writable `learn.model_dir`, which can be set to a full writable path in case `learn.path` is not writable (kaggle, et al)
+- In any event of a `Callback` returning a dictionary will update the state of the `CallbackHandler`
+- When creating a custom metric in a `Callback`, instead of storing the result in `self.metric`, you should add it to `last_metrics` using the method above (see https://docs.fast.ai/metrics.html#Creating-your-own-metric).
+
+### Fixed:
+
+- Do nothing if `Image.resize` called with image already at required size
+- Lighting transforms moved to later in pipeline to avoid redundant computation
+
 ## 1.0.46 (2019-02-25)
 
 ### Breaking change:
 
 - In `CollabDataBunch`, `pct_val` is renamed `valid_pct` for consistency
 - `ImageItemList` becomes `ImageList` for consistency with `TextList` and `TabularList`
-- `load_learner` will fail for exported (pickled) models with error *AttributeError: Can't get attribute 'ImageItemList' on <module 'fastai.vision.data'*. You will need to re-export with version 1.0.46 or use 1.0.44
+- `load_learner` will fail for exported (pickled) models with error
+  "AttributeError: Can't get attribute 'ImageItemList' on module
+  'fastai.vision.data'". You will need to re-export with version 1.0.46 or use 1.0.44
 
 ### New:
 
-- `Learner.destroy`: completely free up `learn`, leaving an empty shell (to replace `gc.collect` eye-sore)
+- `Learner.destroy`: completely free up `learn`, leaving an empty shell
 - added NVML query support on OSX via `pynvx` in addition to `pynvml` (Windows/Linux)
 - Added `XResNet`, which is ResNet plus tricks from
   [Bag of Tricks for Image Classification](https://arxiv.org/abs/1812.01187).
   Note pretrained models not available yet for this architecture.
-- `TextClassificationInterpretation`, which computes intrisic attention to give some interpretation of classification
+- `TextClassificationInterpretation`, which computes intrinsic attention to give some interpretation of classification
   results in text (thanks to herrmann)
 - `add_cyclical_datepart`, which add the dateparts as cosine embeddings in tabular data (thanks to herrmann)
 - `MixedItemList` two mix several kinds of `ItemList` together

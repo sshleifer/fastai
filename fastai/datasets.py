@@ -31,6 +31,12 @@ class URLs():
     MNIST_VAR_SIZE_TINY = f'{S3_IMAGE}mnist_var_size_tiny'
     PLANET_SAMPLE       = f'{URL}planet_sample'
     PLANET_TINY         = f'{URL}planet_tiny'
+    IMAGENETTE          = f'{S3_IMAGE}imagenette2'
+    IMAGENETTE_160      = f'{S3_IMAGE}imagenette2-160'
+    IMAGENETTE_320      = f'{S3_IMAGE}imagenette2-320'
+    IMAGEWOOF           = f'{S3_IMAGE}imagewoof2'
+    IMAGEWOOF_160       = f'{S3_IMAGE}imagewoof2-160'
+    IMAGEWOOF_320       = f'{S3_IMAGE}imagewoof2-320'
 
     # kaggle competitions download dogs-vs-cats -p {DOGS.absolute()}
     DOGS = f'{URL}dogscats'
@@ -63,11 +69,13 @@ class URLs():
     CAMVID             = f'{S3_IMAGELOC}camvid'
     CAMVID_TINY        = f'{URL}camvid_tiny'
     LSUN_BEDROOMS      = f'{S3_IMAGE}bedroom'
-    
+    PASCAL_2007        = f'{S3_IMAGELOC}pascal_2007'
+    PASCAL_2012        = f'{S3_IMAGELOC}pascal_2012'
+
     #Pretrained models
     OPENAI_TRANSFORMER = f'{S3_MODEL}transformer'
-    WT103               = f'{S3_MODEL}wt103'
-    WT103_1             = f'{S3_MODEL}wt103-1'
+    WT103_FWD          = f'{S3_MODEL}wt103-fwd'
+    WT103_BWD          = f'{S3_MODEL}wt103-bwd'
 
 # to create/update a checksum for ./mnist_var_size_tiny.tgz, run:
 # python -c 'import fastai.datasets; print(fastai.datasets._check_file("mnist_var_size_tiny.tgz"))'
@@ -102,14 +110,16 @@ _checks = {
     URLs.MNIST_VAR_SIZE_TINY:(565372, 'b71a930f4eb744a4a143a6c7ff7ed67f'),
     URLs.MT_ENG_FRA:(2598183296, '69573f58e2c850b90f2f954077041d8c'),
     URLs.OPENAI_TRANSFORMER:(432848315, '024b0d2203ebb0cd1fc64b27cf8af18e'),
+    URLs.PASCAL_2007:(1636130334, 'a70574e9bc592bd3b253f5bf46ce12e3'),
+    URLs.PASCAL_2012:(2611715776, '2ae7897038383836f86ce58f66b09e31'),
     URLs.PETS:(811706944, 'e4db5c768afd933bb91f5f594d7417a4'),
     URLs.PLANET_SAMPLE:(15523994, '8bfb174b3162f07fbde09b54555bdb00'),
     URLs.PLANET_TINY:(997569, '490873c5683454d4b2611fb1f00a68a9'),
     URLs.SOGOU_NEWS:(384269937, '950f1366d33be52f5b944f8a8b680902'),
     URLs.WIKITEXT:(190200704, '2dd8cf8693b3d27e9c8f0a7df054b2c7'),
     URLs.WIKITEXT_TINY:(4070055, '2a82d47a7b85c8b6a8e068dc4c1d37e7'),
-    URLs.WT103:(206789489, '76fd08236c78bf91b7fb76698d53afa3'),
-    URLs.WT103_1:(165175630, '9cbe02e9e23b969fee10dc9b8dec6566'),
+    URLs.WT103_FWD:(105067061, '7d1114cd9684bf9d1ca3c9f6a54da6f9'),
+    URLs.WT103_BWD:(105205312, '20b06f5830fd5a891d21044c28d3097f'),
     URLs.YAHOO_ANSWERS:(319476345, '0632a0d236ef3a529c0fa4429b339f68'),
     URLs.YELP_REVIEWS_POLARITY:(166373201, '48c8451c1ad30472334d856b5d294807'),
     URLs.YELP_REVIEWS:(196146755, '1efd84215ea3e30d90e4c33764b889db'),
@@ -117,11 +127,13 @@ _checks = {
 
 #TODO: This can probably be coded more shortly and nicely.
 class Config():
-    "Creates a default config file at `~/.fastai/config.yml`"
-    DEFAULT_CONFIG_PATH = '~/.fastai/config.yml'
+    "Creates a default config file 'config.yml' in $FASTAI_HOME (default `~/.fastai/`)"
+    DEFAULT_CONFIG_LOCATION = os.path.expanduser(os.getenv('FASTAI_HOME', '~/.fastai'))
+    DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_LOCATION + '/config.yml'
     DEFAULT_CONFIG = {
-        'data_path': '~/.fastai/data',
-        'model_path': '~/.fastai/models'
+        'data_path': DEFAULT_CONFIG_LOCATION + '/data',
+        'data_archive_path': DEFAULT_CONFIG_LOCATION + '/data',
+        'model_path': DEFAULT_CONFIG_LOCATION + '/models'
     }
 
     @classmethod
@@ -140,6 +152,11 @@ class Config():
         return cls.get_path('data_path')
 
     @classmethod
+    def data_archive_path(cls):
+        "Get the path to data archives in the config file."
+        return cls.get_path('data_archive_path')
+
+    @classmethod
     def model_path(cls):
         "Get the path to fastai pretrained models in the config file."
         return cls.get_path('model_path')
@@ -150,7 +167,7 @@ class Config():
         fpath = _expand_path(fpath or cls.DEFAULT_CONFIG_PATH)
         if not fpath.exists() and create_missing: cls.create(fpath)
         assert fpath.exists(), f'Could not find config at: {fpath}. Please create'
-        with open(fpath, 'r') as yaml_file: return yaml.load(yaml_file)
+        with open(fpath, 'r') as yaml_file: return yaml.safe_load(yaml_file)
 
     @classmethod
     def create(cls, fpath):
@@ -164,32 +181,35 @@ class Config():
 
 def _expand_path(fpath): return Path(fpath).expanduser()
 def url2name(url): return url.split('/')[-1]
-def url2path(url, data=True):
+
+#TODO: simplify this mess
+def url2path(url, data=True, ext:str='.tgz'):
     "Change `url` to a path."
     name = url2name(url)
-    return datapath4file(name) if data else modelpath4file(name)
-def _url2tgz(url, data=True):
-    return datapath4file(f'{url2name(url)}.tgz') if data else modelpath4file(f'{url2name(url)}.tgz')
+    return datapath4file(name, ext=ext, archive=False) if data else modelpath4file(name, ext=ext)
+def _url2tgz(url, data=True, ext:str='.tgz'):
+    return datapath4file(f'{url2name(url)}{ext}', ext=ext) if data else modelpath4file(f'{url2name(url)}{ext}', ext=ext)
 
-def modelpath4file(filename):
+def modelpath4file(filename, ext:str='.tgz'):
     "Return model path to `filename`, checking locally first then in the config file."
     local_path = URLs.LOCAL_PATH/'models'/filename
-    if local_path.exists() or local_path.with_suffix('.tgz').exists(): return local_path
+    if local_path.exists() or local_path.with_suffix(ext).exists(): return local_path
     else: return Config.model_path()/filename
 
-def datapath4file(filename):
+def datapath4file(filename, ext:str='.tgz', archive=True):
     "Return data path to `filename`, checking locally first then in the config file."
     local_path = URLs.LOCAL_PATH/'data'/filename
-    if local_path.exists() or local_path.with_suffix('.tgz').exists(): return local_path
-    else: return Config.data_path()/filename
+    if local_path.exists() or local_path.with_suffix(ext).exists(): return local_path
+    elif archive: return Config.data_archive_path() / filename
+    else: return Config.data_path() / filename
 
-def download_data(url:str, fname:PathOrStr=None, data:bool=True) -> Path:
+def download_data(url:str, fname:PathOrStr=None, data:bool=True, ext:str='.tgz') -> Path:
     "Download `url` to destination `fname`."
-    fname = Path(ifnone(fname, _url2tgz(url, data)))
+    fname = Path(ifnone(fname, _url2tgz(url, data, ext=ext)))
     os.makedirs(fname.parent, exist_ok=True)
     if not fname.exists():
         print(f'Downloading {url}')
-        download_url(f'{url}.tgz', fname)
+        download_url(f'{url}{ext}', fname)
     return fname
 
 def _check_file(fname):
@@ -199,17 +219,16 @@ def _check_file(fname):
     return size,hash_nb
 
 def untar_data(url:str, fname:PathOrStr=None, dest:PathOrStr=None, data=True, force_download=False) -> Path:
-    "Download `url` to `fname` if it doesn't exist, and un-tgz to folder `dest`."
+    "Download `url` to `fname` if `dest` doesn't exist, and un-tgz to folder `dest`."
     dest = url2path(url, data) if dest is None else Path(dest)/url2name(url)
     fname = Path(ifnone(fname, _url2tgz(url, data)))
     if force_download or (fname.exists() and url in _checks and _check_file(fname) != _checks[url]):
         print(f"A new version of the {'dataset' if data else 'model'} is available.")
-        os.remove(fname)
-        shutil.rmtree(dest)
+        if fname.exists(): os.remove(fname)
+        if dest.exists(): shutil.rmtree(dest)
     if not dest.exists():
         fname = download_data(url, fname=fname, data=data)
-        data_dir = Config().data_path()
         if url in _checks:
-            assert _check_file(fname) == _checks[url], f"Downloaded file {fname} does not match checksum expected! Remove that file from {data_dir} and try your code again."
+            assert _check_file(fname) == _checks[url], f"Downloaded file {fname} does not match checksum expected! Remove that file from {Config().data_archive_path()} and try your code again."
         tarfile.open(fname, 'r:gz').extractall(dest.parent)
     return dest

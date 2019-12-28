@@ -5,7 +5,7 @@ https://docs.fast.ai/dev/style.html) first. (Note that we don't follow PEP8, but
 
 ## Note for new contributors from Jeremy
 
-It can be tempting to jump into a new project by questioning the stylistic decisions that have been made, such as naming, formatting, and so forth. It is especially so for python programmers coming to this project, which is unusual in following a number of conventions that are common in other programming communities, but not in Python. However, please don’t do this, for (amongst others) the following reasons:
+It can be tempting to jump into a new project by questioning the stylistic decisions that have been made, such as naming, formatting, and so forth. This can be especially so for python programmers contributing to this project, which is unusual in following a number of conventions that are common in other programming communities, but not in Python. However, please don’t do this, for (amongst others) the following reasons:
 
 - Contributing to [Parkinson’s law of triviality](https://www.wikiwand.com/en/Law_of_triviality) has negative consequences for a project. Let’s focus on deep learning!
 - It’s exhausting to repeat the same discussion over and over again, especially when it’s been well documented already. When you have a question about the project, please check the pages in the docs website linked here.
@@ -30,13 +30,14 @@ Here are some ways that you can learn a lot about the library, whilst also contr
 
 #### Did you write a patch that fixes a bug?
 
-* Sign the [Contributor License Agreement](https://www.clahub.com/agreements/fastai/fastai).
 * Open a new GitHub pull request with the patch.
 * Ensure that your PR includes [tests](https://docs.fast.ai/dev/test.html) that fail without your patch, and pass with it.
 * Ensure the PR description clearly describes the problem and solution. Include the relevant issue number if applicable.
 * Before submitting, please be sure you abide by our [coding style](https://docs.fast.ai/dev/style.html) and [the guide on abbreviations](https://docs.fast.ai/dev/abbr.html) and clean-up your code accordingly.
 
 ## Do you intend to add a new feature or change an existing one?
+
+**Please take note that we are in the midst of making several breaking changes with the preparation of v1.1 so we suggest you wait a little bit before starting coding it.**
 
 * You can suggest your change on the [fastai forum](http://forums.fast.ai/) to see if others are interested or want to help. [This topic](http://forums.fast.ai/t/fastai-v1-adding-features/23041/8) lists the features that will be added to fastai in the foreseeable future. Be sure to read it too!
 * Before implementing a non-trivial new feature, first create a notebook version of your new feature, like those in [dev_nb](https://github.com/fastai/fastai_docs/tree/master/dev_nb). It should show step-by-step what your code is doing, and why, with the result of each step. Try to simplify the code as much as possible. When you're happy with it, let us know on the forum (include a link to gist with your notebook.)
@@ -63,7 +64,7 @@ Here are some ways that you can learn a lot about the library, whilst also contr
 
 ### Code PRs
 
-* If your PR a bug fix, please also include a test that demonstrates the problem, or modifies an existing test that wasn't catching that problem already. Of course, it's not a requirement, so proceed anyway if you can't figure it out how to write a test, but do try. Without having a test your fix could be lost down the road. By supplying a test, you're ensuring that your projects won't break in the future.
+* If your PR is a bug fix, please also include a test that demonstrates the problem, or modifies an existing test that wasn't catching that problem already. Of course, it's not a requirement, so proceed anyway if you can't figure out how to write a test, but do try. Without having a test your fix could be lost down the road. By supplying a test, you're ensuring that your projects won't break in the future.
 
 * Same applies for PRs that implement new features - without having a test case validating this new feature, it'd be very easy for that new feature to break in the future. A test case ensures that the feature will not break.
 

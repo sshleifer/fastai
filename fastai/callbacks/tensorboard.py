@@ -3,7 +3,7 @@ from ..basic_train import Learner
 from ..basic_data import DatasetType, DataBunch
 from ..vision import Image
 from ..vision.gan import GANLearner
-from ..callbacks import LearnerCallback
+from ..basic_train import LearnerCallback
 from ..core import *
 from ..torch_core import *
 from threading import Thread, Event
@@ -14,7 +14,7 @@ import torchvision.utils as vutils
 from abc import ABC
 #This is an optional dependency in fastai.  Must install separately.
 try: from tensorboardX import SummaryWriter
-except: pass
+except: print("To use this tracker, please run 'pip install tensorboardx'. Also you must have Tensorboard running to see results")
 
 __all__=['LearnerTensorboardWriter', 'GANTensorboardWriter', 'ImageGenTensorboardWriter']
 
@@ -29,9 +29,10 @@ class LearnerTensorboardWriter(LearnerCallback):
         super().__init__(learn=learn)
         self.base_dir,self.name,self.loss_iters,self.hist_iters,self.stats_iters  = base_dir,name,loss_iters,hist_iters,stats_iters
         log_dir = base_dir/name
-        self.tbwriter = SummaryWriter(log_dir=str(log_dir))
+        self.tbwriter = SummaryWriter(str(log_dir))
         self.hist_writer = HistogramTBWriter()
         self.stats_writer = ModelStatsTBWriter()
+        self.graph_writer = GraphTBWriter()
         self.data = None
         self.metrics_root = '/metrics/'
         self._update_batches_if_needed()
@@ -42,6 +43,7 @@ class LearnerTensorboardWriter(LearnerCallback):
 
     def _update_batches_if_needed(self)->None:
         "one_batch function is extremely slow with large datasets.  This is caching the result as an optimization."
+        if self.learn.data.valid_dl is None: return # Running learning rate finder, so return
         update_batches = self.data is not self.learn.data
         if not update_batches: return
         self.data = self.learn.data
@@ -72,27 +74,38 @@ class LearnerTensorboardWriter(LearnerCallback):
         "Writes training metrics to Tensorboard."
         recorder = self.learn.recorder
         for i, name in enumerate(recorder.names[start_idx:]):
-            if len(last_metrics) < i+1: return
+            if last_metrics is None or len(last_metrics) < i+1: return
             scalar_value = last_metrics[i]
             self._write_scalar(name=name, scalar_value=scalar_value, iteration=iteration)
 
-    def on_batch_end(self, last_loss:Tensor, iteration:int, **kwargs)->None:
+    def _write_embedding(self, iteration:int)->None:
+        "Writes embedding to Tensorboard."
+        for name, emb in self.learn.model.named_children():
+            if isinstance(emb, nn.Embedding):
+                self.tbwriter.add_embedding(list(emb.parameters())[0], global_step=iteration, tag=name)
+
+    def on_train_begin(self, **kwargs: Any) -> None:
+        self.graph_writer.write(model=self.learn.model, tbwriter=self.tbwriter,
+                                input_to_model=next(iter(self.learn.data.dl(DatasetType.Single)))[0])
+
+    def on_batch_end(self, last_loss:Tensor, iteration:int, train:bool, **kwargs)->None:
         "Callback function that writes batch end appropriate data to Tensorboard."
-        if iteration == 0: return
+        if iteration == 0 or not train: return
         self._update_batches_if_needed()
         if iteration % self.loss_iters == 0: self._write_training_loss(iteration=iteration, last_loss=last_loss)
         if iteration % self.hist_iters == 0: self._write_weight_histograms(iteration=iteration)
 
     # Doing stuff here that requires gradient info, because they get zeroed out afterwards in training loop
-    def on_backward_end(self, iteration:int, **kwargs)->None:
+    def on_backward_end(self, iteration:int, train:bool, **kwargs)->None:
         "Callback function that writes backward end appropriate data to Tensorboard."
-        if iteration == 0: return
+        if iteration == 0 and not train: return
         self._update_batches_if_needed()
         if iteration % self.stats_iters == 0: self._write_model_stats(iteration=iteration)
 
     def on_epoch_end(self, last_metrics:MetricsList, iteration:int, **kwargs)->None:
         "Callback function that writes epoch end appropriate data to Tensorboard."
         self._write_metrics(iteration=iteration, last_metrics=last_metrics)
+        self._write_embedding(iteration=iteration)
 
 # TODO:  We're overriding almost everything here.  Seems like a good idea to question that ("is a" vs "has a")
 class GANTensorboardWriter(LearnerTensorboardWriter):
@@ -149,15 +162,15 @@ class GANTensorboardWriter(LearnerTensorboardWriter):
                                     iteration=iteration, tbwriter=self.tbwriter)
         finally: trainer.switch(gen_mode=gen_mode)
 
-    def on_batch_end(self, iteration:int, **kwargs)->None:
+    def on_batch_end(self, iteration:int, train:bool, **kwargs)->None:
         "Callback function that writes batch end appropriate data to Tensorboard."
-        super().on_batch_end(iteration=iteration, **kwargs)
-        if iteration == 0: return
+        super().on_batch_end(iteration=iteration, train=train, **kwargs)
+        if iteration == 0 and not train: return
         if iteration % self.visual_iters == 0: self._write_images(iteration=iteration)
 
-    def on_backward_end(self, iteration:int, **kwargs)->None:
+    def on_backward_end(self, iteration:int, train:bool, **kwargs)->None:
         "Callback function that writes backward end appropriate data to Tensorboard."
-        if iteration == 0: return
+        if iteration == 0 and not train: return
         self._update_batches_if_needed()
         #TODO:  This could perhaps be implemented as queues of requests instead but that seemed like overkill. 
         # But I'm not the biggest fan of maintaining these boolean flags either... Review pls.
@@ -178,10 +191,10 @@ class ImageGenTensorboardWriter(LearnerTensorboardWriter):
         self.img_gen_vis.write(learn=self.learn, trn_batch=self.trn_batch, val_batch=self.val_batch, iteration=iteration, 
                                tbwriter=self.tbwriter)
 
-    def on_batch_end(self, iteration:int, **kwargs)->None:
+    def on_batch_end(self, iteration:int, train:bool, **kwargs)->None:
         "Callback function that writes batch end appropriate data to Tensorboard."
-        super().on_batch_end(iteration=iteration, **kwargs)
-        if iteration == 0: return
+        super().on_batch_end(iteration=iteration, train=train, **kwargs)
+        if iteration == 0 and not train: return
         if iteration % self.visual_iters == 0: self._write_images(iteration=iteration)
 
 class TBWriteRequest(ABC):
@@ -398,4 +411,21 @@ class ImageTBWriter():
     def _write_for_dstype(self, learn:Learner, batch:Tuple, iteration:int, tbwriter:SummaryWriter, ds_type:DatasetType)->None:
         "Writes batch images of specified DatasetType to Tensorboard."
         request = ImageTBRequest(learn=learn, batch=batch, iteration=iteration, tbwriter=tbwriter, ds_type=ds_type)
+        asyncTBWriter.request_write(request)
+
+class GraphTBRequest(TBWriteRequest):
+    "Request object for model histogram writes to Tensorboard."
+    def __init__(self, model:nn.Module, tbwriter:SummaryWriter, input_to_model:torch.Tensor):
+        super().__init__(tbwriter=tbwriter, iteration=0)
+        self.model,self.input_to_model = model,input_to_model
+
+    def write(self)->None:
+        "Writes single model graph to Tensorboard."
+        self.tbwriter.add_graph(model=self.model, input_to_model=self.input_to_model)
+
+class GraphTBWriter():
+    "Writes model network graph to Tensorboard."
+    def write(self, model:nn.Module, tbwriter:SummaryWriter, input_to_model:torch.Tensor)->None:
+        "Writes model graph to Tensorboard."
+        request = GraphTBRequest(model=model, tbwriter=tbwriter, input_to_model=input_to_model)
         asyncTBWriter.request_write(request)

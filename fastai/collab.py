@@ -7,7 +7,6 @@ __all__ = [*tabular.__all__, 'EmbeddingDotBias', 'EmbeddingNN', 'collab_learner'
 
 class CollabProcessor(TabularProcessor):
     "Subclass `TabularProcessor for `process_one`."
-    
     def process_one(self, item):
         res = super().process_one(item)
         return CollabLine(res.cats,res.conts,res.classes,res.names)
@@ -34,10 +33,9 @@ class EmbeddingNN(TabularModel):
     def forward(self, users:LongTensor, items:LongTensor) -> Tensor:
         return super().forward(torch.stack([users,items], dim=1), None)
 
-class EmbeddingDotBias(nn.Module):
+class EmbeddingDotBias(Module):
     "Base dot model for collaborative filtering."
     def __init__(self, n_factors:int, n_users:int, n_items:int, y_range:Tuple[float,float]=None):
-        super().__init__()
         self.y_range = y_range
         (self.u_weight, self.i_weight, self.u_bias, self.i_bias) = [embedding(*o) for o in [
             (n_users, n_factors), (n_items, n_factors), (n_users,1), (n_items,1)
@@ -62,7 +60,7 @@ class CollabDataBunch(DataBunch):
         rating_name = ifnone(rating_name,ratings.columns[2])
         cat_names = [user_name,item_name]
         src = (CollabList.from_df(ratings, cat_names=cat_names, procs=Categorify)
-               .random_split_by_pct(valid_pct=valid_pct, seed=seed).label_from_df(cols=rating_name))
+               .split_by_rand_pct(valid_pct=valid_pct, seed=seed).label_from_df(cols=rating_name))
         if test is not None: src.add_test(CollabList.from_df(test, cat_names=cat_names))
         return src.databunch(path=path, bs=bs, val_bs=val_bs, num_workers=num_workers, device=device, 
                              collate_fn=collate_fn, no_check=no_check)
@@ -89,7 +87,7 @@ class CollabLearner(Learner):
         return layer(idx).squeeze()
 
     def weight(self, arr:Collection, is_item:bool=True):
-        "Bias for item or user (based on `is_item`) for all in `arr`. (Set model to `cpu` and no grad.)"
+        "Weight for item or user (based on `is_item`) for all in `arr`. (Set model to `cpu` and no grad.)"
         idx = self.get_idx(arr, is_item)
         m = self.model
         layer = m.i_weight if is_item else m.u_weight
