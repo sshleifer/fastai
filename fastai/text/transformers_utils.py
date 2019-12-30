@@ -142,7 +142,7 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, dis
             metadata = dict(
                 lrs=lrs, sched=sched, desc='scheduled_v0', bs=databunch.batch_size, mins=(time.time() - t0) / 60,
                 weight_name=wt_name, fp_16=fp_16, discrim_lr=discrim_lr,
-                recorder_hist=recorder_hist.__dict__,
+                recorder_hist=dict(recorder_hist),
             )
             pickle_save(metadata, learner.path / 'metadata.pkl')
         except KeyboardInterrupt:
