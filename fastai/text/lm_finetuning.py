@@ -441,7 +441,7 @@ def main():
     # Other parameters
     parser.add_argument(
         "--eval_data_file",
-        default=None,
+        default=DEFAULT_PKL,
         type=str,
         help="An optional input evaluation data file to evaluate the perplexity on (a text file).",
     )
