@@ -90,7 +90,7 @@ def choose_best_lr(learner: Learner, div_by=3.):
     best_idx = np.argmin(losses)
     if best_idx == 0: print('lowest lr was the best')
     lr = lrs[best_idx] / div_by
-    print(f'chose lr: {lr:.6f} at index {best_idx}')
+    print(f'chose lr: {lr:.2E} at index {best_idx}')
     return lr
 
 
@@ -111,9 +111,12 @@ import transformers
 from durbango import pickle_save
 
 
+recorder_attrs_to_save = ['lrs', 'metrics', 'moms', 'losses']
+
 def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, discrim_lr=False, moms=(0.8, 0.7)):
     wt_name = 'distilbert-base-uncased'
     learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name)
+    recorder_hist = defaultdict(list)
     if fp_16:
         learner = learner.to_fp16()
     lrs = []
@@ -132,14 +135,19 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, dis
             if discrim_lr: max_lr = slice(max_lr * 0.95 ** num_groups, max_lr)
             lrs.append(max_lr)
             learner.fit_one_cycle(cyc_len, max_lr=max_lr, moms=moms, callbacks=callbacks)
+            for attr in recorder_attrs_to_save:
+                val = getattr(learner.recorder, attr, [np.nan])
+                recorder_hist[attr].append(val)
+
             metadata = dict(
                 lrs=lrs, sched=sched, desc='scheduled_v0', bs=databunch.batch_size, mins=(time.time() - t0) / 60,
-                weight_name=wt_name, fp_16=fp_16, discrim_lr=discrim_lr
+                weight_name=wt_name, fp_16=fp_16, discrim_lr=discrim_lr,
+                recorder_hist=recorder_hist.__dict__,
             )
             pickle_save(metadata, learner.path / 'metadata.pkl')
         except KeyboardInterrupt:
-            return learner
-    return learner
+            break
+    return learner, metadata
 
 def get_distilbert_learner(databunch, exp_name, wt_name):
     adam_w_func = partial(transformers.AdamW, correct_bias=False)
