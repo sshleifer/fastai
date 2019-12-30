@@ -88,8 +88,9 @@ def choose_best_lr(learner: Learner, div_by=3.):
     losses = learner.recorder._split_list(learner.recorder.losses, 10, 5)
     losses = [x.item() for x in losses]
     best_idx = np.argmin(losses)
-    if best_idx == 0: raise ValueError('lowest lr was the best')
+    if best_idx == 0: print('lowest lr was the best')
     lr = lrs[best_idx] / div_by
+    print(f'chose lr: {lr:.6f} at index {best_idx}')
     return lr
 
 
