@@ -84,9 +84,8 @@ class CustomTransformerModel(nn.Module):
 
 def choose_best_lr(learner: Learner, div_by=3.):
     learner.lr_find()
-    lrs = learner.recorder._split_list(learner.recorder.lrs, 10, 5)
-    losses = learner.recorder._split_list(learner.recorder.losses, 10, 5)
-    losses = [x.item() for x in losses]
+    lrs = learner.recorder.lrs
+    losses = [x.item() for x in learner.recorder.losses]
     best_idx = np.argmin(losses)
     if best_idx == 0: print('lowest lr was the best')
     lr = lrs[best_idx] / div_by
@@ -111,7 +110,7 @@ import transformers
 from durbango import pickle_save
 
 
-recorder_attrs_to_save = ['lrs', 'metrics', 'moms', 'losses']
+recorder_attrs_to_save = ['lrs', 'metrics', 'moms']
 
 def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, discrim_lr=False, moms=(0.8, 0.7)):
     wt_name = 'distilbert-base-uncased'
@@ -135,6 +134,8 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, dis
             if discrim_lr: max_lr = slice(max_lr * 0.95 ** num_groups, max_lr)
             lrs.append(max_lr)
             learner.fit_one_cycle(cyc_len, max_lr=max_lr, moms=moms, callbacks=callbacks)
+            losses = [x.item() for x in learner.recorder.losses]
+            recorder_hist['losses'].append(losses)
             for attr in recorder_attrs_to_save:
                 val = getattr(learner.recorder, attr, [np.nan])
                 recorder_hist[attr].append(val)
