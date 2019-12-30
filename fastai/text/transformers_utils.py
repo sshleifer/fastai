@@ -146,6 +146,8 @@ def get_distilbert_learner(databunch, exp_name, wt_name):
     custom_transformer_model = CustomTransformerModel(transformer_model=transformer_model)
     log_dir = Path(f'logs/{exp_name}')
     log_dir.mkdir(exist_ok=True)
+    if (log_dir/'metrics.csv').exists():
+        raise ValueError(f"{str(log_dir/'metrics.csv')} exists. Need new exp_name")
     learner = Learner(databunch,
                       custom_transformer_model,
                       path=log_dir,
