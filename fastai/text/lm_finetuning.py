@@ -441,7 +441,7 @@ def main():
     # Other parameters
     parser.add_argument(
         "--eval_data_file",
-        default=DEFAULT_PKL,
+        default='lm_val_examples.pkl',
         type=str,
         help="An optional input evaluation data file to evaluate the perplexity on (a text file).",
     )
@@ -496,9 +496,9 @@ def main():
         "--do_lower_case", action="store_true", help="Set this flag if you are using an uncased model."
     )
 
-    parser.add_argument("--per_gpu_train_batch_size", default=4, type=int, help="Batch size per GPU/CPU for training.")
+    parser.add_argument("--per_gpu_train_batch_size", default=8, type=int, help="Batch size per GPU/CPU for training.")
     parser.add_argument(
-        "--per_gpu_eval_batch_size", default=4, type=int, help="Batch size per GPU/CPU for evaluation."
+        "--per_gpu_eval_batch_size", default=16, type=int, help="Batch size per GPU/CPU for evaluation."
     )
     parser.add_argument(
         "--gradient_accumulation_steps",
