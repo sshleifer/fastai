@@ -28,7 +28,7 @@ from fastai.text import *
 
 # from fastai.text.transformers_utils i
 
-class TransformersBaseTokenizer(BaseTokenizer):
+class TransformersBaseTokenizer:
     """Wrapper around PreTrainedTokenizer to be compatible with fast.ai"""
 
     def __init__(self, pretrained_tokenizer: PreTrainedTokenizer, model_type='bert', **kwargs):
@@ -40,7 +40,7 @@ class TransformersBaseTokenizer(BaseTokenizer):
         return self
 
     def tokenizer(self, t: str) -> List[str]:
-        """Limits the maximum sequence length and add the spesial tokens"""
+        """Limits the maximum sequence length and add the special tokens."""
         CLS = self._pretrained_tokenizer.cls_token
         SEP = self._pretrained_tokenizer.sep_token
         if self.model_type in ['roberta']:
