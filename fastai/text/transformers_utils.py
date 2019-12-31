@@ -36,6 +36,8 @@ class TransformersBaseTokenizer:
         self.max_seq_len = pretrained_tokenizer.max_len
         self.model_type = model_type
 
+    def add_special_cases(self, *args, **kwargs): pass
+
     def __call__(self, *args, **kwargs):
         return self
 
