@@ -114,8 +114,8 @@ from durbango import pickle_save
 
 recorder_attrs_to_save = ['lrs', 'metrics', 'moms']
 
-def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, discrim_lr=False, moms=(0.8, 0.7)):
-    wt_name = 'distilbert-base-uncased'
+def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, discrim_lr=False, moms=(0.8, 0.7),
+                   wt_name = 'distilbert-base-uncased'):
     learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name)
     recorder_hist = defaultdict(list)
     if fp_16:
