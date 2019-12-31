@@ -86,6 +86,7 @@ class CustomTransformerModel(nn.Module):
 
 def choose_best_lr(learner: Learner, div_by=10., max_lr=1e-4):
     learner.lr_find()
+    learner.recorder.plot()
     lrs = learner.recorder.lrs
     losses = [x.item() for x in learner.recorder.losses]
     best_idx = np.argmin(losses)
