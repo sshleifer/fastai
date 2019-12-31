@@ -84,13 +84,13 @@ class CustomTransformerModel(nn.Module):
         return logits
 
 
-def choose_best_lr(learner: Learner, div_by=3.):
+def choose_best_lr(learner: Learner, div_by=10., max_lr=1e-4):
     learner.lr_find()
     lrs = learner.recorder.lrs
     losses = [x.item() for x in learner.recorder.losses]
     best_idx = np.argmin(losses)
     if best_idx == 0: print('lowest lr was the best')
-    lr = lrs[best_idx] / div_by
+    lr = min(lrs[best_idx] / div_by, max_lr)
     print(f'chose lr: {lr:.2E} at index {best_idx}')
     return lr
 
