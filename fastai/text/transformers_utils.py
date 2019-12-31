@@ -115,20 +115,21 @@ from durbango import pickle_save
 recorder_attrs_to_save = ['lrs', 'metrics', 'moms']
 
 
-def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, discrim_lr=False,
-                   moms=(0.8, 0.7),
+def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, discrim_lr=False,
+                   moms=(0.8, 0.7), clip=1.,
                    wt_name='distilbert-base-uncased'):
     learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name)
     recorder_hist = defaultdict(list)
     if fp_16:
         learner = learner.to_fp16()
     lrs = []
-    callbacks = [SaveModelCallback(learner, name='best_model'),
+    callbacks = [
+        #SaveModelCallback(learner, name='best_model'),
                  CSVLogger(learner, filename='metrics', append=True),
                  PeakMemMetric(learner),
-                 GradientClipping(learner, clip=1.),
                  EarlyStoppingCallback(learner, monitor='accuracy', min_delta=-0.02, patience=5),
                  ]
+    if clip is not None: callbacks.append(GradientClipping(learner, clip=clip))
     t0 = time.time()
     for freeze, cyc_len in sched:
         try:
@@ -154,6 +155,7 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=False, dis
         except KeyboardInterrupt:
             break
     return learner, metadata
+
 
 def get_distilbert_learner(databunch, exp_name, wt_name):
     adam_w_func = partial(transformers.AdamW, correct_bias=False)
