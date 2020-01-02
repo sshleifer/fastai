@@ -85,7 +85,7 @@ class CustomTransformerModel(nn.Module):
         return logits
 
 
-def choose_best_lr(learner: Learner, div_by=10., max_lr=1e-4):
+def choose_best_lr(learner: Learner, div_by=10., max_lr=1e-4, min_lr=1e-5):
     learner.lr_find()
     learner.recorder.plot()
     plt.show()
@@ -94,8 +94,8 @@ def choose_best_lr(learner: Learner, div_by=10., max_lr=1e-4):
     losses = [x.item() for x in learner.recorder.losses]
     best_idx = np.argmin(losses)
     if best_idx == 0: print('lowest lr was the best')
-    lr = min(lrs[best_idx] / div_by, max_lr)
-    print(f'chose lr: {lr:.2E} at index {best_idx}')
+    lr = max(min_lr, min(lrs[best_idx] / div_by, max_lr))
+    print(f'chose lr: {lr:.2E}')
     return lr
 
 
@@ -120,7 +120,7 @@ recorder_attrs_to_save = ['lrs', 'metrics', 'moms']
 
 
 def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, discrim_lr=False,
-                   moms=(0.8, 0.7), clip=1.,
+                   moms=(0.8, 0.7), clip=1., min_lr=0., max_lr=1.,
                    wt_name='distilbert-base-uncased'):
     learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name)
     recorder_hist = defaultdict(list)
@@ -141,7 +141,7 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, disc
             if freeze is None: learner.unfreeze()
             else: learner.freeze_to(freeze)
 
-            max_lr = choose_best_lr(learner)
+            max_lr = choose_best_lr(learner, min_lr=min_lr, max_lr=max_lr)
             if discrim_lr: max_lr = slice(max_lr * 0.95 ** num_groups, max_lr)
             lrs.append(max_lr)
             learner.fit_one_cycle(cyc_len, max_lr=max_lr, moms=moms, callbacks=callbacks)
