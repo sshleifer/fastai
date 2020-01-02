@@ -133,6 +133,7 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, disc
                  PeakMemMetric(learner),
                  EarlyStoppingCallback(learner, monitor='accuracy', min_delta=-0.02, patience=5),
                  ]
+    metadata = {}
     if clip is not None: callbacks.append(GradientClipping(learner, clip=clip))
     t0 = time.time()
     for freeze, cyc_len in sched:
