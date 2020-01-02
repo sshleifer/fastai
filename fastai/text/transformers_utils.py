@@ -24,10 +24,11 @@ MODEL_CLASSES = {
 }
 
 from fastai.text import *
+from durbango import tqdm_nice
 
 
 # from fastai.text.transformers_utils i
-
+import funcy
 class TransformersBaseTokenizer:
     """Wrapper around PreTrainedTokenizer to be compatible with fast.ai"""
 
@@ -41,7 +42,7 @@ class TransformersBaseTokenizer:
     def __call__(self, *args, **kwargs):
         return self
 
-    def tokenizer(self, t: str) -> List[str]:
+    def tokenizer(self, t: str, fixup_func=funcy.identity) -> List[str]:
         """Limits the maximum sequence length and add the special tokens."""
         CLS = self._pretrained_tokenizer.cls_token
         SEP = self._pretrained_tokenizer.sep_token
@@ -49,7 +50,7 @@ class TransformersBaseTokenizer:
             tokens = self._pretrained_tokenizer.tokenize(t, add_prefix_space=True)[
                      :self.max_seq_len - 2]
         else:
-            tokens = self._pretrained_tokenizer.tokenize(t)[:self.max_seq_len - 2]
+            tokens = self._pretrained_tokenizer.tokenize(fixup_func(t))[:self.max_seq_len - 2]
         return [CLS] + tokens + [SEP]
 
 
@@ -87,6 +88,8 @@ class CustomTransformerModel(nn.Module):
 def choose_best_lr(learner: Learner, div_by=10., max_lr=1e-4):
     learner.lr_find()
     learner.recorder.plot()
+    plt.show()
+
     lrs = learner.recorder.lrs
     losses = [x.item() for x in learner.recorder.losses]
     best_idx = np.argmin(losses)
@@ -158,6 +161,14 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, disc
     return learner, metadata
 
 
+re1 = re.compile(r'  +')
+def fixup(x):
+    x = x.replace('#39;', "'").replace('amp;', '&').replace('#146;', "'").replace(
+        'nbsp;', ' ').replace('#36;', '$').replace('\\n', "\n").replace('quot;', "'").replace(
+        '<br />', "\n").replace('\\"', '"').replace('<unk>','u_n').replace(' @.@ ','.').replace(
+        ' @-@ ','-').replace('\\', ' \\ ')
+    return re1.sub(' ', html.unescape(x))
+
 def get_distilbert_learner(databunch, exp_name, wt_name):
     adam_w_func = partial(transformers.AdamW, correct_bias=False)
     transformer_model = DistilBertForSequenceClassification.from_pretrained(wt_name, num_labels=5)
@@ -183,3 +194,22 @@ def get_distilbert_learner(databunch, exp_name, wt_name):
     num_groups = len(list_layers)
     learner = learner.split(list_layers)
     return learner, num_groups
+import funcy
+def lflat(lsts): return list(funcy.flatten(lsts))
+
+def make_lm_examples(text_arr, model_name = 'distilbert-base-uncased', block_size =512):
+    """Note that we are losing the last truncated example here for the sake of simplicity (no padding)
+    """
+    transformer_tokenizer = AutoTokenizer.from_pretrained(model_name)
+    _base_tokenizer = TransformersBaseTokenizer(
+        pretrained_tokenizer=transformer_tokenizer, model_type=model_name)
+    toks = [_base_tokenizer.tokenizer(p) for p in tqdm_nice(text_arr)]
+    ids = [transformer_tokenizer.convert_tokens_to_ids(p) for p in tqdm_nice(toks)]
+    tokenized_text = lflat(ids)
+
+    examples = []
+    for i in range(0, len(tokenized_text) - block_size + 1, block_size):
+        examples.append(tokenized_text[i : i + block_size])
+    return examples
+
+
