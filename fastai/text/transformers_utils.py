@@ -113,8 +113,9 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, disc
                  EarlyStoppingCallback(learner, monitor='accuracy', min_delta=-0.02, patience=5),
                  ]
 
-    if reduce_on_plateau: callbacks.append(ReduceLROnPlateauCallback(min_lr=min_lr))
+
     metadata = {}
+    if reduce_on_plateau: callbacks.append(ReduceLROnPlateauCallback(learner, min_lr=min_lr))
     if clip is not None: callbacks.append(GradientClipping(learner, clip=clip))
     t0 = time.time()
     for freeze, cyc_len in sched:
