@@ -428,7 +428,7 @@ def main():
 
     # Required parameters
     parser.add_argument("--train_data_file", default=DEFAULT_PKL, type=str, required=False, help="The input training data file (a text file).")
-    parser.add_argument("--output_dir", default='lm_logs/', type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",)
+    parser.add_argument("--output_dir",  type=str, required=True, help="The output directory where the model predictions and checkpoints will be written.",)
     parser.add_argument("--eval_data_file", default='lm_val_examples.pkl', type=str, help="An optional input evaluation data file to evaluate the perplexity on (a text file).",)
     parser.add_argument("--model_type", default="distilbert", type=str, help="The model architecture to be fine-tuned.")
     parser.add_argument("--model_name_or_path", default='distilbert-base-uncased', type=str, help="The model checkpoint for weights initialization.",)
