@@ -120,19 +120,21 @@ recorder_attrs_to_save = ['lrs', 'metrics', 'moms']
 
 
 def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, discrim_lr=False,
-                   moms=(0.8, 0.7), clip=1., min_lr=0., max_lr=1.,
+                   moms=(0.8, 0.7), clip=1., min_lr=0., orig_max_lr=1., one_cycle=True, reduce_on_plateau=False,
                    wt_name='distilbert-base-uncased'):
     learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name)
     recorder_hist = defaultdict(list)
     if fp_16:
         learner = learner.to_fp16()
+
     lrs = []
     callbacks = [
-        #SaveModelCallback(learner, name='best_model'),
                  CSVLogger(learner, filename='metrics', append=True),
                  PeakMemMetric(learner),
                  EarlyStoppingCallback(learner, monitor='accuracy', min_delta=-0.02, patience=5),
                  ]
+
+    if reduce_on_plateau: callbacks.append(ReduceLROnPlateauCallback(min_lr=min_lr))
     metadata = {}
     if clip is not None: callbacks.append(GradientClipping(learner, clip=clip))
     t0 = time.time()
@@ -141,10 +143,16 @@ def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, disc
             if freeze is None: learner.unfreeze()
             else: learner.freeze_to(freeze)
 
-            max_lr = choose_best_lr(learner, min_lr=min_lr, max_lr=max_lr)
+            if one_cycle:
+                max_lr = choose_best_lr(learner, min_lr=min_lr, max_lr=orig_max_lr)
+            else:
+                max_lr = orig_max_lr
             if discrim_lr: max_lr = slice(max_lr * 0.95 ** num_groups, max_lr)
             lrs.append(max_lr)
-            learner.fit_one_cycle(cyc_len, max_lr=max_lr, moms=moms, callbacks=callbacks)
+            if one_cycle:
+                learner.fit_one_cycle(cyc_len, max_lr=max_lr, moms=moms, callbacks=callbacks)
+            else:
+                learner.fit(cyc_len, lr=max_lr, moms=moms, callbacks=callbacks)
             losses = [x.item() for x in learner.recorder.losses]
             recorder_hist['losses'].append(losses)
             for attr in recorder_attrs_to_save:
