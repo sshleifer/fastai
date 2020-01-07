@@ -99,9 +99,9 @@ recorder_attrs_to_save = ['lrs', 'metrics', 'moms']
 
 
 def run_experiment(sched, databunch, exp_name='dbert_baseline', fp_16=True, discrim_lr=False,
-                   moms=(0.8, 0.7), clip=1., min_lr=0., orig_max_lr=1., one_cycle=True, num_labels=2,
+                   moms=(0.9, 0.999), clip=1., min_lr=0., orig_max_lr=1., one_cycle=True, num_labels=2,
                    reduce_on_plateau=False, wt_name='distilbert-base-uncased'):
-    learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name, num_labels=num_labels)
+    learner, num_groups = get_distilbert_learner(databunch, exp_name, wt_name, betas=moms, num_labels=num_labels)
     recorder_hist = defaultdict(list)
     if fp_16:
         learner = learner.to_fp16()
@@ -158,8 +158,8 @@ def fixup(x):
         ' @-@ ','-').replace('\\', ' \\ ')
     return re1.sub(' ', html.unescape(x))
 
-def get_distilbert_learner(databunch, exp_name, wt_name, num_labels=5):
-    adam_w_func = partial(transformers.AdamW, correct_bias=False)
+def get_distilbert_learner(databunch, exp_name, wt_name, num_labels=5, **optim_kwargs):
+    adam_w_func = partial(transformers.AdamW, correct_bias=False, **optim_kwargs)
     transformer_model = DistilBertForSequenceClassification.from_pretrained(wt_name, num_labels=num_labels)
     custom_transformer_model = CustomTransformerModel(transformer_model=transformer_model)
     log_dir = Path(f'logs/{exp_name}')
